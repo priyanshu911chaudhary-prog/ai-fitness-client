@@ -70,6 +70,7 @@ export default function Profile() {
   }, [reset]);
 
   const onSubmit = async (data) => {
+    console.log("onSubmit called with:", data);
     setIsLoading(true);
     setMessage('');
     setErrorMessage('');
@@ -84,6 +85,7 @@ export default function Profile() {
         dietPreference: data.dietPreference,
       };
 
+      console.log("Sending profile payload:", profilePayload);
       await api.patch('/profile', profilePayload);
       setMessage('Profile updated successfully!');
       
@@ -92,7 +94,7 @@ export default function Profile() {
         navigate('/dashboard');
       }, 1000);
     } catch (err) {
-      console.error(err);
+      console.error("API error during profile update:", err);
       setErrorMessage(err.response?.data?.message || 'Failed to update profile.');
     } finally {
       setIsLoading(false);
@@ -126,7 +128,7 @@ export default function Profile() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit, (err) => console.error("Form validation errors:", err))} className="space-y-8">
         {/* Personal Info Card */}
         <div className="group relative rounded-[2rem] border border-zinc-800/60 bg-zinc-900/40 p-8 shadow-xl backdrop-blur-xl transition-all hover:border-emerald-500/30 overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors pointer-events-none" />
