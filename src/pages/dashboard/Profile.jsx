@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { User, Scale, Target, Apple } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -8,6 +8,7 @@ import { api } from '../../utils/api';
 
 export default function Profile() {
   const location = useLocation();
+  const navigate = useNavigate();
   const needSetup = location.state?.needSetup;
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -85,6 +86,11 @@ export default function Profile() {
 
       await api.patch('/profile', profilePayload);
       setMessage('Profile updated successfully!');
+      
+      // Redirect to dashboard on success
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
     } catch (err) {
       console.error(err);
       setErrorMessage(err.response?.data?.message || 'Failed to update profile.');
