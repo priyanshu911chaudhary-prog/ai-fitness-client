@@ -10,9 +10,16 @@ export default function Sidebar() {
     { name: 'Meals', path: '/meals', icon: Utensils },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await import('../../utils/api').then(({ api }) => api.post('/auth/logout'));
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
   };
 
   return (

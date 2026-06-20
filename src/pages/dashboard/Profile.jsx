@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { User, Scale, Target, Apple } from 'lucide-react';
+import { User, Scale, Target, Apple, Shield, Key } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { api } from '../../utils/api';
@@ -13,6 +13,14 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
+
 
   const { register, handleSubmit, reset } = useForm({
     defaultValues: {
@@ -118,6 +126,55 @@ export default function Profile() {
       setErrorMessage(err.response?.data?.message || 'Failed to update profile.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLogoutAllDevices = async () => {
+    if (window.confirm("Are you sure you want to log out from all devices? You will be logged out of this session as well.")) {
+      setIsLoading(true);
+      try {
+        await api.post('/auth/logout-all');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        navigate('/login');
+      } catch (err) {
+        console.error("Logout all devices failed", err);
+        setErrorMessage(err.response?.data?.message || "Failed to log out from all devices.");
+        setIsLoading(false);
+      }
+    }
+  };
+
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordMessage('');
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match.");
+      return;
+    }
+    
+    if (newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await api.post('/auth/change-password', {
+        oldPassword,
+        newPassword
+      });
+      setPasswordMessage("Password changed successfully!");
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setPasswordError(err.response?.data?.message || "Failed to change password.");
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -243,6 +300,96 @@ export default function Profile() {
           </Button>
         </div>
       </form>
+
+      {/* Password Settings Card */}
+      <form onSubmit={handleChangePassword} className="group relative rounded-[2rem] border border-zinc-800/60 bg-zinc-900/40 p-8 shadow-xl backdrop-blur-xl transition-all hover:border-purple-500/30 overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-colors pointer-events-none" />
+        <div className="relative z-10 flex items-center gap-4 mb-8 border-b border-zinc-800/50 pb-4">
+          <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+            <Key className="h-6 w-6 text-purple-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Password Settings</h2>
+        </div>
+        
+        {passwordMessage && (
+          <div className="rounded-md bg-emerald-500/10 p-4 mb-6 text-sm text-emerald-400 border border-emerald-500/20">
+            {passwordMessage}
+          </div>
+        )}
+        
+        {passwordError && (
+          <div className="rounded-md bg-red-500/10 p-4 mb-6 text-sm text-red-400 border border-red-500/20">
+            {passwordError}
+          </div>
+        )}
+
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+          <Input 
+            label="Current Password" 
+            type="password" 
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+            required
+          />
+          <div className="hidden md:block"></div>
+          
+          <Input 
+            label="New Password" 
+            type="password" 
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            minLength={8}
+          />
+          <Input 
+            label="Confirm New Password" 
+            type="password" 
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <Button type="submit" disabled={isChangingPassword} className="px-8 bg-purple-500 hover:bg-purple-600 text-white">
+            {isChangingPassword ? 'Updating...' : 'Update Password'}
+          </Button>
+        </div>
+      </form>
+
+      {/* Danger Zone Card */}
+      <div className="group relative rounded-[2rem] border border-red-500/30 bg-red-950/10 p-8 shadow-xl backdrop-blur-xl transition-all hover:border-red-500/50 overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/5 rounded-full blur-3xl group-hover:bg-red-500/10 transition-colors pointer-events-none" />
+        
+        <div className="relative z-10 flex items-center gap-4 mb-8 border-b border-red-500/20 pb-4">
+          <div className="p-3 bg-red-500/20 rounded-xl border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+            <Shield className="h-6 w-6 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-red-400">Danger Zone</h2>
+        </div>
+        
+        <div className="relative z-10 bg-black/20 rounded-xl border border-red-500/10 p-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex-1">
+              <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                Log out from all devices
+              </h3>
+              <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-xl">
+                If you notice suspicious activity or left your account logged in on a public device, this will instantly terminate all active sessions across every device. You will need to log back in.
+              </p>
+            </div>
+            
+            <Button 
+              type="button" 
+              onClick={handleLogoutAllDevices} 
+              disabled={isLoading}
+              className="whitespace-nowrap bg-red-500/10 text-white hover:bg-red-500 hover:text-white border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.1)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all duration-300 w-full md:w-auto px-6 py-6"
+            >
+              {isLoading ? 'Processing...' : 'Log Out All Devices'}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
