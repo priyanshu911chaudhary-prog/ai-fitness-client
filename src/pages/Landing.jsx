@@ -5,12 +5,12 @@ import heroImage from '../assets/hero_ai.png';
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 overflow-hidden selection:bg-emerald-500/30">
+    <div className="min-h-dvh bg-zinc-950 text-zinc-50 overflow-hidden selection:bg-emerald-500/30">
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BrainCircuit className="h-6 w-6 text-emerald-400" />
+            <BrainCircuit className="h-6 w-6 text-emerald-400 shrink-0" />
             <span className="text-xl font-bold bg-gradient-to-r from-zinc-100 to-zinc-400 bg-clip-text text-transparent">
               AIFit
             </span>
@@ -33,7 +33,7 @@ export default function Landing() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center pt-20 pb-20 px-6 overflow-hidden">
+      <section className="relative min-h-dvh flex items-center pt-20 pb-20 px-6 overflow-hidden">
         {/* Background Glows */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
@@ -41,7 +41,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8 z-10 animate-[fade-in-up_0.8s_ease-out_forwards]">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-sm text-emerald-400">
-              <SparklesIcon className="w-4 h-4" />
+              <SparklesIcon className="w-4 h-4 shrink-0" />
               <span>Next-Gen Fitness Intelligence</span>
             </div>
             
@@ -59,7 +59,7 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Link to="/signup">
                 <Button className="w-full sm:w-auto text-lg px-8 py-4 h-auto rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-[0_0_20px_rgba(52,211,153,0.4)] transition-all flex items-center justify-center gap-2">
-                  Start Free Trial <ArrowRight className="w-5 h-5" />
+                  Start Free Trial <ArrowRight className="w-5 h-5 shrink-0" />
                 </Button>
               </Link>
               <Link to="/login">

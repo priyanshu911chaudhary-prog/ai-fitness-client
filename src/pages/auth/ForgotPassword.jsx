@@ -49,7 +49,7 @@ export default function ForgotPassword() {
   // Success message
   if (isSuccess) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-4 overflow-hidden selection:bg-emerald-500/30">
+      <div className="relative flex min-h-dvh items-center justify-center bg-zinc-950 p-4 overflow-hidden selection:bg-emerald-500/30">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
         
@@ -73,7 +73,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-4 overflow-hidden selection:bg-emerald-500/30">
+    <div className="relative flex min-h-dvh items-center justify-center bg-zinc-950 p-4 overflow-hidden selection:bg-emerald-500/30">
       {/* Background Glows */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />

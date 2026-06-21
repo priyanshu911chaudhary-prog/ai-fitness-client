@@ -64,7 +64,7 @@ export default function Signup() {
         auth: {
           clientId: "537f1e34-78ee-4f6e-816e-a8cea6552c56",
           authority: "https://login.microsoftonline.com/common",
-          redirectUri: window.location.origin + '/login',
+          redirectUri: window.location.origin,
         },
       });
       await pca.initialize();
@@ -88,7 +88,7 @@ export default function Signup() {
   // Render success message for email verification
   if (isSuccess) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-4 overflow-hidden selection:bg-emerald-500/30">
+      <div className="relative flex min-h-dvh items-center justify-center bg-zinc-950 p-4 overflow-hidden selection:bg-emerald-500/30">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
         
@@ -112,7 +112,7 @@ export default function Signup() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-4 overflow-hidden selection:bg-emerald-500/30">
+    <div className="relative flex min-h-dvh items-center justify-center bg-zinc-950 p-4 overflow-hidden selection:bg-emerald-500/30">
       {/* Background Glows */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />

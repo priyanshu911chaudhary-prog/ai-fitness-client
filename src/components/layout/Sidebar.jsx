@@ -23,9 +23,9 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-zinc-800/50 bg-zinc-950/80 p-6 backdrop-blur-2xl">
+    <aside className="flex h-dvh w-64 flex-col border-r border-zinc-800/50 bg-zinc-950/80 p-6 backdrop-blur-2xl">
       <div className="mb-10 flex items-center gap-2">
-        <BrainCircuit className="h-7 w-7 text-emerald-400" />
+        <BrainCircuit className="h-7 w-7 text-emerald-400 shrink-0" />
         <span className="text-2xl font-bold bg-gradient-to-r from-zinc-100 to-zinc-400 bg-clip-text text-transparent">
           AIFit
         </span>
@@ -44,7 +44,7 @@ export default function Sidebar() {
               }`
             }
           >
-            <item.icon className={`h-5 w-5 ${item.name === 'Meals' ? 'text-teal-400' : ''}`} />
+            <item.icon className={`h-5 w-5 shrink-0 ${item.name === 'Meals' ? 'text-teal-400' : ''}`} />
             {item.name}
           </NavLink>
         ))}
@@ -52,14 +52,14 @@ export default function Sidebar() {
 
       <div className="mt-auto space-y-2 border-t border-zinc-800/50 pt-6">
         <Link to="/profile" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 hover:translate-x-1 transition-all duration-300">
-          <Settings className="h-5 w-5" />
+          <Settings className="h-5 w-5 shrink-0" />
           Settings
         </Link>
         <button 
           onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:translate-x-1 transition-all duration-300"
         >
-          <LogOut className="h-5 w-5" />
+          <LogOut className="h-5 w-5 shrink-0" />
           Log Out
         </button>
       </div>

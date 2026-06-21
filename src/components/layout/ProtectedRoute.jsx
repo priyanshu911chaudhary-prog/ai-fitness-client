@@ -10,7 +10,7 @@ export default function ProtectedRoute() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-50 overflow-hidden">
+    <div className="flex h-dvh bg-zinc-950 text-zinc-50 overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto bg-zinc-950 p-6 md:p-8">
         <div className="mx-auto max-w-5xl">

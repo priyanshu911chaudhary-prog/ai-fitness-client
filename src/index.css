@@ -27,3 +27,63 @@
     to { text-shadow: 0 0 20px rgba(52, 211, 153, 0.6), 0 0 30px rgba(52, 211, 153, 0.4); }
   }
 }
+
+/* Safari Compatibility: Webkit Backdrop Filter fallbacks */
+.backdrop-blur-sm {
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.backdrop-blur {
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.backdrop-blur-md {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.backdrop-blur-lg {
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+.backdrop-blur-xl {
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+.backdrop-blur-2xl {
+  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(40px);
+}
+.backdrop-blur-3xl {
+  -webkit-backdrop-filter: blur(64px);
+  backdrop-filter: blur(64px);
+}
+
+/* Remove number input spinners in Webkit and Firefox */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Custom autofill overrides for Safari to align with dark theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f4f4f5 !important; /* zinc-100 */
+  -webkit-box-shadow: 0 0 0px 1000px #18181b inset !important; /* zinc-900 */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Interactive touch elements: remove grey tap highlights in iOS Safari */
+input, select, textarea, button, a {
+  -webkit-tap-highlight-color: transparent;
+}

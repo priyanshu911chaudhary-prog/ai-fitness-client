@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { User, Scale, Target, Apple, Shield, Key } from 'lucide-react';
+import { User, Scale, Target, Apple, Shield, Key, ChevronDown } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { api } from '../../utils/api';
@@ -211,7 +211,7 @@ export default function Profile() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors pointer-events-none" />
           <div className="relative z-10 flex items-center gap-4 mb-8 border-b border-zinc-800/50 pb-4">
             <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-              <User className="h-6 w-6 text-emerald-400" />
+              <User className="h-6 w-6 text-emerald-400 shrink-0" />
             </div>
             <h2 className="text-xl font-bold text-white">Personal Information</h2>
           </div>
@@ -222,11 +222,14 @@ export default function Profile() {
             
             <div className="flex flex-col space-y-1.5 w-full">
               <label className="text-sm font-medium text-zinc-300">Gender</label>
-              <select className="flex h-11 w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300" {...register('gender')}>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
+              <div className="relative">
+                <select className="flex h-11 w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md px-4 py-2 text-base md:text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 appearance-none pr-10" {...register('gender')}>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
           </div>
         </div>
@@ -236,7 +239,7 @@ export default function Profile() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl group-hover:bg-teal-500/10 transition-colors pointer-events-none" />
           <div className="relative z-10 flex items-center gap-4 mb-8 border-b border-zinc-800/50 pb-4">
             <div className="p-3 bg-teal-500/10 rounded-xl border border-teal-500/20">
-              <Scale className="h-6 w-6 text-teal-400" />
+              <Scale className="h-6 w-6 text-teal-400 shrink-0" />
             </div>
             <h2 className="text-xl font-bold text-white">Body Metrics</h2>
           </div>
@@ -253,7 +256,7 @@ export default function Profile() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors pointer-events-none" />
           <div className="relative z-10 flex items-center gap-4 mb-8 border-b border-zinc-800/50 pb-4">
             <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
-              <Target className="h-6 w-6 text-blue-400" />
+              <Target className="h-6 w-6 text-blue-400 shrink-0" />
             </div>
             <h2 className="text-xl font-bold text-white">Fitness Goals & Preferences</h2>
           </div>
@@ -261,35 +264,44 @@ export default function Profile() {
           <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex flex-col space-y-1.5 w-full">
               <label className="text-sm font-medium text-zinc-300">Primary Goal</label>
-              <select className="flex h-11 w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300" {...register('goal')}>
-                <option value="weight_loss">Weight Loss</option>
-                <option value="weight_gain">Weight Gain</option>
-                <option value="muscle_building">Muscle Building</option>
-                <option value="running">Running</option>
-                <option value="strength_training">Strength Training</option>
-                <option value="endurance">Endurance</option>
-              </select>
+              <div className="relative">
+                <select className="flex h-11 w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md px-4 py-2 text-base md:text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 appearance-none pr-10" {...register('goal')}>
+                  <option value="weight_loss">Weight Loss</option>
+                  <option value="weight_gain">Weight Gain</option>
+                  <option value="muscle_building">Muscle Building</option>
+                  <option value="running">Running</option>
+                  <option value="strength_training">Strength Training</option>
+                  <option value="endurance">Endurance</option>
+                </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
 
             <div className="flex flex-col space-y-1.5 w-full">
               <label className="text-sm font-medium text-zinc-300">Activity Level</label>
-              <select className="flex h-11 w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300" {...register('activityLevel')}>
-                <option value="sedentary">Sedentary</option>
-                <option value="light">Lightly Active</option>
-                <option value="moderate">Moderately Active</option>
-                <option value="active">Active</option>
-                <option value="very_active">Very Active</option>
-              </select>
+              <div className="relative">
+                <select className="flex h-11 w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md px-4 py-2 text-base md:text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 appearance-none pr-10" {...register('activityLevel')}>
+                  <option value="sedentary">Sedentary</option>
+                  <option value="light">Lightly Active</option>
+                  <option value="moderate">Moderately Active</option>
+                  <option value="active">Active</option>
+                  <option value="very_active">Very Active</option>
+                </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
 
             <div className="flex flex-col space-y-1.5 w-full">
               <label className="text-sm font-medium text-zinc-300">Diet Preference</label>
-              <select className="flex h-11 w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300" {...register('dietPreference')}>
-                <option value="Vegetarian">Vegetarian</option>
-                <option value="Non-Vegetarian">Non-Vegetarian</option>
-                <option value="Vegan">Vegan</option>
-                <option value="Eggetarian">Eggetarian</option>
-              </select>
+              <div className="relative">
+                <select className="flex h-11 w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md px-4 py-2 text-base md:text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 appearance-none pr-10" {...register('dietPreference')}>
+                  <option value="Vegetarian">Vegetarian</option>
+                  <option value="Non-Vegetarian">Non-Vegetarian</option>
+                  <option value="Vegan">Vegan</option>
+                  <option value="Eggetarian">Eggetarian</option>
+                </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
           </div>
         </div>
