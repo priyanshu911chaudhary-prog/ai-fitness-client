@@ -22,7 +22,7 @@ export default function Profile() {
   const [passwordMessage, setPasswordMessage] = useState('');
 
 
-  const { register, handleSubmit, reset } = useForm({
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
       fullName: "",
       age: 20,
@@ -32,9 +32,12 @@ export default function Profile() {
       height: 170,
       activityLevel: "moderate",
       goal: "muscle_building",
-      dietPreference: "Non-Vegetarian"
+      dietPreference: "Non-Vegetarian",
+      experienceLevel: "beginner"
     }
   });
+
+  const experienceLevel = watch('experienceLevel') || 'beginner';
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -65,7 +68,8 @@ export default function Profile() {
             height: profile.height || 170,
             activityLevel: profile.activityLevel || "moderate",
             goal: profile.goal || "muscle_building",
-            dietPreference: profile.dietPreference || "Non-Vegetarian"
+            dietPreference: profile.dietPreference || "Non-Vegetarian",
+            experienceLevel: profile.experienceLevel || "beginner"
           });
         }
       } catch (err) {
@@ -83,7 +87,8 @@ export default function Profile() {
             height: 170,
             activityLevel: "moderate",
             goal: "muscle_building",
-            dietPreference: "Non-Vegetarian"
+            dietPreference: "Non-Vegetarian",
+            experienceLevel: "beginner"
           });
         }
       }
@@ -111,6 +116,7 @@ export default function Profile() {
         dietPreference: data.dietPreference,
         gender: data.gender,
         dob: dobStr,
+        experienceLevel: data.experienceLevel,
       };
 
       console.log("Sending profile payload:", profilePayload);
@@ -302,6 +308,53 @@ export default function Profile() {
                 </select>
                 <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
               </div>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-zinc-800/50 flex flex-col space-y-3">
+            <label className="text-sm font-medium text-zinc-350">Experience Level</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                {
+                  value: 'beginner',
+                  title: 'Beginner',
+                  desc: 'New to training, focused on learning form and building consistency.'
+                },
+                {
+                  value: 'intermediate',
+                  title: 'Intermediate',
+                  desc: 'Comfortable with basic compounds and looking to build strength/muscle.'
+                },
+                {
+                  value: 'advanced',
+                  title: 'Advanced',
+                  desc: 'Experienced lifter, looking to optimize training intensity.'
+                }
+              ].map((opt) => {
+                const isSelected = experienceLevel === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setValue('experienceLevel', opt.value)}
+                    className={`relative flex flex-col items-start p-5 rounded-2xl border text-left transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40 ${
+                      isSelected
+                        ? 'border-emerald-500 bg-emerald-500/10 text-white shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                        : 'border-zinc-800 bg-zinc-950/20 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
+                    )}
+                    <span className={`font-semibold mb-1 text-sm ${isSelected ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                      {opt.title}
+                    </span>
+                    <span className="text-xs text-zinc-400 leading-relaxed">
+                      {opt.desc}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
