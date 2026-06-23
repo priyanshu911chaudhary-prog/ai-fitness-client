@@ -91,6 +91,9 @@ export default function Dashboard() {
   const fatsTarget = Math.round((calorieTarget * 0.25) / 9);
 
   const caloriesConsumed = data.todayNutrition?.caloriesConsumed || 0;
+  const proteinConsumed = data.todayNutrition?.macros?.protein || 0;
+  const carbsConsumed = data.todayNutrition?.macros?.carbs || 0;
+  const fatsConsumed = data.todayNutrition?.macros?.fats || 0;
   const caloriesBurned = data.todayNutrition?.caloriesBurned || 0;
   const bmiCurrent = data.bmi?.current ? Number(data.bmi.current).toFixed(1) : "N/A";
   const bmiCategory = data.bmi?.category || "Not Calculated";
@@ -215,37 +218,165 @@ export default function Dashboard() {
 
       {/* Top Metrics Grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Calorie Card */}
+        {/* Activity Rings (Calorie & Macros) Card */}
         <div className="group relative rounded-[2rem] border border-zinc-800/60 bg-zinc-900/40 p-8 md:col-span-2 shadow-xl backdrop-blur-xl transition-all hover:border-emerald-500/30 overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors pointer-events-none" />
-          <div className="relative z-10 flex items-end justify-between mb-8">
-            <div>
-              <h3 className="text-zinc-400 text-sm font-medium uppercase tracking-wider">Calories Today</h3>
-              <div className="mt-2 text-5xl font-bold text-white">
-                {Math.round(caloriesConsumed)} <span className="text-2xl text-zinc-500 font-medium">/ {Math.round(calorieTarget)} kcal</span>
+          
+          <div className="relative z-10 flex items-center gap-3 mb-6 border-b border-zinc-800/50 pb-4">
+            <h3 className="text-xl font-bold text-white">Daily Activity Rings</h3>
+          </div>
+
+          <div className="relative z-10 flex flex-col lg:flex-row items-center gap-8 lg:gap-12 py-2">
+            {/* Concentric Rings Visualizer */}
+            <div className="flex justify-center items-center shrink-0">
+              <svg viewBox="0 0 200 200" className="w-40 h-40 md:w-44 md:h-44 overflow-visible drop-shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <defs>
+                  <linearGradient id="ringCalGradient" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0%" stopColor="#ff0055" />
+                    <stop offset="100%" stopColor="#ff6600" />
+                  </linearGradient>
+                  <linearGradient id="ringProtGradient" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0%" stopColor="#a3ff00" />
+                    <stop offset="100%" stopColor="#10b981" />
+                  </linearGradient>
+                  <linearGradient id="ringCarbGradient" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0%" stopColor="#00f2fe" />
+                    <stop offset="100%" stopColor="#4facfe" />
+                  </linearGradient>
+                </defs>
+
+                {/* Calories Ring (Outer) */}
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="80"
+                  fill="none"
+                  stroke="#ff0055"
+                  strokeWidth="14"
+                  opacity="0.12"
+                />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="80"
+                  fill="none"
+                  stroke="url(#ringCalGradient)"
+                  strokeWidth="14"
+                  strokeDasharray="502.65"
+                  strokeDashoffset={502.65 - (Math.min(caloriesConsumed / (calorieTarget || 1), 1)) * 502.65}
+                  strokeLinecap="round"
+                  transform="rotate(-90 100 100)"
+                  className="transition-all duration-1000 ease-out"
+                />
+
+                {/* Protein Ring (Middle) */}
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="62"
+                  fill="none"
+                  stroke="#a3ff00"
+                  strokeWidth="14"
+                  opacity="0.12"
+                />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="62"
+                  fill="none"
+                  stroke="url(#ringProtGradient)"
+                  strokeWidth="14"
+                  strokeDasharray="389.56"
+                  strokeDashoffset={389.56 - (Math.min(proteinConsumed / (proteinTarget || 1), 1)) * 389.56}
+                  strokeLinecap="round"
+                  transform="rotate(-90 100 100)"
+                  className="transition-all duration-1000 ease-out"
+                />
+
+                {/* Carbs Ring (Inner) */}
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="44"
+                  fill="none"
+                  stroke="#00f2fe"
+                  strokeWidth="14"
+                  opacity="0.12"
+                />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="44"
+                  fill="none"
+                  stroke="url(#ringCarbGradient)"
+                  strokeWidth="14"
+                  strokeDasharray="276.46"
+                  strokeDashoffset={276.46 - (Math.min(carbsConsumed / (carbsTarget || 1), 1)) * 276.46}
+                  strokeLinecap="round"
+                  transform="rotate(-90 100 100)"
+                  className="transition-all duration-1000 ease-out"
+                />
+              </svg>
+            </div>
+
+            {/* Detailed metrics */}
+            <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+              {/* Calories Row */}
+              <div className="flex items-center gap-4 bg-zinc-950/20 p-4 rounded-2xl border border-zinc-800/30">
+                <div className="w-3.5 h-3.5 rounded-full bg-[#ff0055] shadow-[0_0_10px_rgba(255,0,85,0.5)] shrink-0" />
+                <div>
+                  <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Move (Calories)</p>
+                  <p className="text-lg font-bold text-white mt-1">
+                    {Math.round(caloriesConsumed)} <span className="text-zinc-500 text-sm font-medium">/ {Math.round(calorieTarget)} kcal</span>
+                  </p>
+                  <span className="text-[11px] text-zinc-550 font-semibold block mt-0.5">
+                    {Math.round((caloriesConsumed / (calorieTarget || 1)) * 100)}% completed
+                  </span>
+                </div>
+              </div>
+
+              {/* Protein Row */}
+              <div className="flex items-center gap-4 bg-zinc-950/20 p-4 rounded-2xl border border-zinc-800/30">
+                <div className="w-3.5 h-3.5 rounded-full bg-[#a3ff00] shadow-[0_0_10px_rgba(163,255,0,0.5)] shrink-0" />
+                <div>
+                  <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Protein (Build)</p>
+                  <p className="text-lg font-bold text-white mt-1">
+                    {Math.round(proteinConsumed)}g <span className="text-zinc-500 text-sm font-medium">/ {Math.round(proteinTarget)}g</span>
+                  </p>
+                  <span className="text-[11px] text-zinc-550 font-semibold block mt-0.5">
+                    {Math.round((proteinConsumed / (proteinTarget || 1)) * 100)}% completed
+                  </span>
+                </div>
+              </div>
+
+              {/* Carbs Row */}
+              <div className="flex items-center gap-4 bg-zinc-950/20 p-4 rounded-2xl border border-zinc-800/30">
+                <div className="w-3.5 h-3.5 rounded-full bg-[#00f2fe] shadow-[0_0_10px_rgba(0,242,254,0.5)] shrink-0" />
+                <div>
+                  <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Carbs (Energy)</p>
+                  <p className="text-lg font-bold text-white mt-1">
+                    {Math.round(carbsConsumed)}g <span className="text-zinc-500 text-sm font-medium">/ {Math.round(carbsTarget)}g</span>
+                  </p>
+                  <span className="text-[11px] text-zinc-550 font-semibold block mt-0.5">
+                    {Math.round((carbsConsumed / (carbsTarget || 1)) * 100)}% completed
+                  </span>
+                </div>
+              </div>
+
+              {/* Fats Row */}
+              <div className="flex items-center gap-4 bg-zinc-950/20 p-4 rounded-2xl border border-zinc-800/30">
+                <div className="w-3.5 h-3.5 rounded-full bg-[#8e2de2] shadow-[0_0_10px_rgba(142,45,226,0.5)] shrink-0" />
+                <div>
+                  <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Fats (Healthy)</p>
+                  <p className="text-lg font-bold text-white mt-1">
+                    {Math.round(fatsConsumed)}g <span className="text-zinc-500 text-sm font-medium">/ {Math.round(fatsTarget)}g</span>
+                  </p>
+                  <span className="text-[11px] text-zinc-550 font-semibold block mt-0.5">
+                    {Math.round((fatsConsumed / (fatsTarget || 1)) * 100)}% completed
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="relative z-10 grid grid-cols-3 gap-8 mt-4">
-            <MacroBar 
-              label="Protein" 
-              current={data.todayNutrition?.macros?.protein || 0} 
-              target={proteinTarget} 
-              colorClass="bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" 
-            />
-            <MacroBar 
-              label="Carbs" 
-              current={data.todayNutrition?.macros?.carbs || 0} 
-              target={carbsTarget} 
-              colorClass="bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.5)]" 
-            />
-            <MacroBar 
-              label="Fats" 
-              current={data.todayNutrition?.macros?.fats || 0} 
-              target={fatsTarget} 
-              colorClass="bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" 
-            />
           </div>
         </div>
 
