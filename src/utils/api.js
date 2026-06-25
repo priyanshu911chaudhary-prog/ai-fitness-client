@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 // Create a centralized Axios instance
 export const api = axios.create({
