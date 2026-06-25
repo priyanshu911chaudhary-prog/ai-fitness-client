@@ -1,11 +1,14 @@
 import axios from 'axios';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
 // Create a centralized Axios instance
 export const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Request Interceptor: Attach the access token
@@ -14,6 +17,9 @@ api.interceptors.request.use(
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (config) {
+      config.withCredentials = true;
     }
     return config;
   },
@@ -31,8 +37,8 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Attempt to hit your refresh token endpoint
-        const { data } = await axios.post('/api/v1/auth/refresh-token', {}, {
+        // Attempt to hit your refresh token endpoint directly so we do not recurse through the interceptor
+        const { data } = await axios.post(`${apiBaseUrl}/auth/refresh-token`, {}, {
           withCredentials: true // Assuming refresh token is in an HttpOnly cookie
         });
 

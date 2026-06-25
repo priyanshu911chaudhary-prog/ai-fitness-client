@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { api } from '../../utils/api'; 
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { PublicClientApplication } from "@azure/msal-browser";
+import msalInstance from '../../utils/msalConfig';
 
 // 1. Define the validation schema with password confirmation
 const signupSchema = z.object({
@@ -60,13 +60,7 @@ export default function Signup() {
     setIsLoading(true);
     setServerError('');
     try {
-      const pca = new PublicClientApplication({
-      auth: {
-        clientId: "537f1e34-78ee-4f6e-816e-a8cea6552c56",
-        authority: "https://login.microsoftonline.com/common",
-        redirectUri: window.location.origin + '/auth-redirect.html',
-        },
-      });
+      const pca = msalInstance;
       await pca.initialize();
       const response = await pca.loginPopup({
         scopes: ["openid", "profile", "email"],

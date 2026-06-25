@@ -1,9 +1,31 @@
 <!DOCTYPE html>
-<html>
-<head><title>Authenticating...</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Authentication Redirect</title>
+</head>
 <body>
-  <script>
-    // MSAL will automatically process the response here
+  <p>Completing authentication...</p>
+  <script src="https://alcdn.msauth.net/browser/2.42.0/js/msal-browser.min.js"></script>
+  <script type="text/javascript">
+    const msalConfig = {
+      auth: {
+        clientId: "537f1e34-78ee-4f6e-816e-a8cea6552c56",
+        authority: "https://login.microsoftonline.com/common",
+        redirectUri: window.location.origin + "/auth-redirect.html",
+      },
+    };
+    const pca = new msal.PublicClientApplication(msalConfig);
+
+    pca.handleRedirectPromise()
+      .then(() => {
+        window.close();
+      })
+      .catch((err) => {
+        console.error(err);
+        window.close();
+      });
   </script>
 </body>
 </html>
