@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+// Determine API base URL.
+// In Netlify production we rely on the `public/_redirects` which proxies `/api/*` to the backend.
+// For direct IP use (optional) set VITE_API_BASE_URL to e.g. "http://13.63.236.146:3000/api/v1" in Netlify env.
+const envBase = import.meta.env.VITE_API_BASE_URL;
+const apiBaseUrl = envBase && envBase !== '' ? envBase : '/api/v1';
 
 // Create a centralized Axios instance
 export const api = axios.create({
@@ -14,6 +18,8 @@ export const api = axios.create({
 // Request Interceptor: Attach the access token
 api.interceptors.request.use(
   (config) => {
+    // debug: log outgoing request URL in dev
+    if (import.meta.env.DEV) console.debug('[api] request ->', config.method, config.baseURL + config.url);
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -32,6 +38,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // debug: log the failed request
+    if (import.meta.env.DEV) console.debug('[api] response error ->', originalRequest?.method, originalRequest?.url, error.response?.status);
     // If the error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
