@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Dumbbell, Utensils, Timer, Flame, Loader2, Sparkles } from 'lucide-react';
+import { Dumbbell, Utensils, Timer, Flame, Loader2, Sparkles, GlassWater, Trash2 } from 'lucide-react';
 import { api } from '../../utils/api';
 
 // Reusable progress bar component for macros
@@ -31,6 +31,13 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Water Tracker state
+  const [showWaterHistory, setShowWaterHistory] = useState(false);
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [tempGoal, setTempGoal] = useState(2000);
+  const [customAmount, setCustomAmount] = useState('');
+  const [loggingWater, setLoggingWater] = useState(false);
+
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
@@ -42,6 +49,7 @@ export default function Dashboard() {
           navigate('/profile', { state: { needSetup: true } });
         } else {
           setData(dashData);
+          setTempGoal(dashData.todayWater?.goal || 2000);
         }
       } catch (err) {
         console.error("Dashboard error:", err);
@@ -98,6 +106,79 @@ export default function Dashboard() {
   const workoutDuration = data.todayNutrition?.workoutDuration || 0;
   const bmiCurrent = data.bmi?.current ? Number(data.bmi.current).toFixed(1) : "N/A";
   const bmiCategory = data.bmi?.category || "Not Calculated";
+
+  // Water helper methods
+  const handleLogWater = async (amountVal) => {
+    const amount = Number(amountVal);
+    if (!amount || amount <= 0 || isNaN(amount)) return;
+    
+    setLoggingWater(true);
+    try {
+      const res = await api.post('/water', { amount });
+      const newLog = res.data.data;
+      
+      setData(prev => {
+        const waterObj = prev.todayWater || { logs: [], goal: 2000, totalIntake: 0 };
+        return {
+          ...prev,
+          todayWater: {
+            ...waterObj,
+            logs: [...waterObj.logs, newLog],
+            totalIntake: waterObj.totalIntake + amount
+          }
+        };
+      });
+      setCustomAmount('');
+    } catch (err) {
+      console.error("Failed to log water:", err);
+    } finally {
+      setLoggingWater(false);
+    }
+  };
+
+  const handleDeleteWaterLog = async (logId) => {
+    try {
+      await api.delete(`/water/${logId}`);
+      setData(prev => {
+        const waterObj = prev.todayWater || { logs: [], goal: 2000, totalIntake: 0 };
+        const targetLog = waterObj.logs.find(l => l._id === logId);
+        const amountToDeduct = targetLog ? targetLog.amount : 0;
+        return {
+          ...prev,
+          todayWater: {
+            ...waterObj,
+            logs: waterObj.logs.filter(l => l._id !== logId),
+            totalIntake: Math.max(0, waterObj.totalIntake - amountToDeduct)
+          }
+        };
+      });
+    } catch (err) {
+      console.error("Failed to delete water log:", err);
+    }
+  };
+
+  const handleUpdateWaterGoal = async (e) => {
+    e.preventDefault();
+    const goalVal = Number(tempGoal);
+    if (!goalVal || goalVal <= 0 || isNaN(goalVal)) return;
+
+    try {
+      await api.put('/water/goal', { waterGoal: goalVal });
+      setData(prev => {
+        const waterObj = prev.todayWater || { logs: [], goal: 2000, totalIntake: 0 };
+        return {
+          ...prev,
+          todayWater: {
+            ...waterObj,
+            goal: goalVal
+          }
+        };
+      });
+      setIsEditingGoal(false);
+    } catch (err) {
+      console.error("Failed to update water goal:", err);
+    }
+  };
 
   const mealDay = data.todaysMeal?.day || data.greeting?.today;
   const mealPlanMeals = data.todaysMeal?.meals || [];
@@ -579,17 +660,205 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Burn/Intake Summary */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="rounded-[2rem] border border-zinc-800/60 bg-zinc-900/40 p-6 shadow-xl backdrop-blur-xl">
-          <p className="text-zinc-400 text-sm uppercase tracking-wider font-medium">Calories Consumed Today</p>
-          <div className="mt-3 text-4xl font-bold text-white">{Math.round(caloriesConsumed)} kcal</div>
-          <p className="mt-2 text-zinc-500 text-sm">Meals logged: {data.todayNutrition?.mealsLogged || 0}</p>
+      {/* Burn/Intake/Water Summary */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {/* Calories Consumed */}
+        <div className="rounded-[2rem] border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col justify-between shadow-xl backdrop-blur-xl">
+          <div>
+            <p className="text-zinc-400 text-sm uppercase tracking-wider font-medium">Calories Consumed Today</p>
+            <div className="mt-3 text-4xl font-bold text-white">{Math.round(caloriesConsumed)} kcal</div>
+          </div>
+          <p className="mt-4 text-zinc-500 text-sm border-t border-zinc-800/40 pt-3">Meals logged: {data.todayNutrition?.mealsLogged || 0}</p>
         </div>
-        <div className="rounded-[2rem] border border-zinc-800/60 bg-zinc-900/40 p-6 shadow-xl backdrop-blur-xl">
-          <p className="text-zinc-400 text-sm uppercase tracking-wider font-medium">Calories Burned Today</p>
-          <div className="mt-3 text-4xl font-bold text-white">{Math.round(caloriesBurned)} kcal</div>
-          <p className="mt-2 text-zinc-500 text-sm">Workout logs: {data.todayNutrition?.workoutsLogged || 0}</p>
+
+        {/* Interactive Water Intake Card */}
+        <div className="group relative rounded-[2rem] border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col justify-between shadow-xl backdrop-blur-xl transition-all hover:border-sky-500/30 overflow-hidden min-h-[220px]">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-sky-500/5 rounded-full blur-3xl group-hover:bg-sky-500/10 transition-colors pointer-events-none" />
+          
+          <div className="relative z-10 flex items-center justify-between border-b border-zinc-800/50 pb-2">
+            <div className="flex items-center gap-2">
+              <GlassWater className="h-5 w-5 text-sky-400 animate-pulse shrink-0" />
+              <span className="text-zinc-400 text-sm uppercase tracking-wider font-medium">Hydration</span>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button 
+                onClick={() => {
+                  setTempGoal(data.todayWater?.goal || 2000);
+                  setIsEditingGoal(true);
+                }}
+                className="px-2 py-1 rounded-lg bg-zinc-800/30 hover:bg-zinc-800 border border-zinc-800/50 text-zinc-400 hover:text-white transition-all text-xs font-semibold"
+                title="Edit daily goal"
+              >
+                Goal: {data.todayWater?.goal || 2000}ml
+              </button>
+              <button 
+                onClick={() => setShowWaterHistory(!showWaterHistory)}
+                className="px-2 py-1 rounded-lg bg-zinc-800/30 hover:bg-zinc-800 border border-zinc-800/50 text-zinc-400 hover:text-white transition-all text-xs font-semibold"
+                title="View today's history"
+              >
+                Logs ({data.todayWater?.logs?.length || 0})
+              </button>
+            </div>
+          </div>
+
+          {/* Card Content Area */}
+          {isEditingGoal ? (
+            <form onSubmit={handleUpdateWaterGoal} className="relative z-10 flex items-center gap-2 py-4">
+              <input
+                type="number"
+                value={tempGoal}
+                onChange={(e) => setTempGoal(e.target.value)}
+                className="flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-150 focus:border-sky-500 focus:outline-none"
+                placeholder="Goal (ml)"
+                min="100"
+                required
+              />
+              <button 
+                type="submit" 
+                className="px-3 py-2 rounded-xl bg-sky-500 text-zinc-950 hover:bg-sky-450 transition-colors font-bold text-xs shrink-0"
+              >
+                Save
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setIsEditingGoal(false)}
+                className="px-3 py-2 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-750 transition-colors font-bold text-xs shrink-0"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : showWaterHistory ? (
+            /* Log history feed */
+            <div className="relative z-10 flex-1 flex flex-col py-3 overflow-y-auto max-h-[140px] scrollbar-thin scrollbar-thumb-zinc-800 pr-1">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Today's logs</span>
+                <button 
+                  className="text-xs text-sky-400 hover:underline"
+                  onClick={() => setShowWaterHistory(false)}
+                >
+                  Back to Tracker
+                </button>
+              </div>
+              {data.todayWater?.logs?.length > 0 ? (
+                <div className="space-y-1.5">
+                  {data.todayWater.logs.map((log) => (
+                    <div key={log._id} className="flex justify-between items-center bg-zinc-950/40 px-3 py-1.5 rounded-xl border border-zinc-800/30 hover:border-sky-500/20 transition-all">
+                      <div>
+                        <span className="font-bold text-zinc-200 text-xs">{log.amount} ml</span>
+                        <span className="text-[9px] text-zinc-500 block">
+                          {new Date(log.consumedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => handleDeleteWaterLog(log._id)}
+                        className="text-zinc-550 hover:text-red-400 p-1 rounded transition-colors"
+                        title="Delete log"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-xs text-zinc-500">
+                  No water logged yet today.
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Interactive visualizer */
+            <div className="relative z-10 flex items-center justify-around py-3">
+              {/* Cup Visualizer */}
+              <div className="water-container hover:scale-105 transition-transform duration-300 shrink-0">
+                {/* Blue filling */}
+                <div 
+                  className="water-wave" 
+                  style={{ height: `${Math.min(100, Math.round(((data.todayWater?.totalIntake || 0) / (data.todayWater?.goal || 2000)) * 100))}%` }}
+                />
+                {/* Centered text display inside cup */}
+                <div className="relative z-20 flex flex-col items-center select-none text-center">
+                  <span className="text-[26px] font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none">
+                    {Math.round(((data.todayWater?.totalIntake || 0) / (data.todayWater?.goal || 2000)) * 100)}%
+                  </span>
+                  <span className="text-[9px] font-bold text-sky-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] uppercase mt-0.5 tracking-wider">
+                    {data.todayWater?.totalIntake || 0}ml
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick stats on side of visualizer */}
+              <div className="flex flex-col justify-center">
+                <span className="text-2xl font-black text-white leading-none">
+                  {data.todayWater?.totalIntake || 0} <span className="text-xs font-normal text-zinc-500">ml</span>
+                </span>
+                <span className="text-[11px] text-zinc-400 font-semibold mt-1">
+                  Target: {data.todayWater?.goal || 2000} ml
+                </span>
+                <span className="text-[10px] font-bold text-sky-400 mt-0.5">
+                  {Math.max(0, (data.todayWater?.goal || 2000) - (data.todayWater?.totalIntake || 0)) <= 0 
+                    ? "Goal Achieved! 🎉" 
+                    : `${Math.max(0, (data.todayWater?.goal || 2000) - (data.todayWater?.totalIntake || 0))}ml remaining`
+                  }
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Logging Presets / Custom input */}
+          {!isEditingGoal && !showWaterHistory && (
+            <div className="relative z-10 pt-2 border-t border-zinc-800/40">
+              <div className="grid grid-cols-3 gap-1.5 mb-2">
+                <button 
+                  onClick={() => handleLogWater(250)}
+                  disabled={loggingWater}
+                  className="py-1 rounded-xl bg-sky-500/10 hover:bg-sky-500 text-sky-400 hover:text-zinc-950 border border-sky-500/20 font-bold text-[10px] transition-all flex flex-col items-center justify-center cursor-pointer active:scale-95 disabled:opacity-50"
+                >
+                  <span>+250ml</span>
+                </button>
+                <button 
+                  onClick={() => handleLogWater(500)}
+                  disabled={loggingWater}
+                  className="py-1 rounded-xl bg-sky-500/10 hover:bg-sky-500 text-sky-400 hover:text-zinc-950 border border-sky-500/20 font-bold text-[10px] transition-all flex flex-col items-center justify-center cursor-pointer active:scale-95 disabled:opacity-50"
+                >
+                  <span>+500ml</span>
+                </button>
+                <button 
+                  onClick={() => handleLogWater(1000)}
+                  disabled={loggingWater}
+                  className="py-1 rounded-xl bg-sky-500/10 hover:bg-sky-500 text-sky-400 hover:text-zinc-950 border border-sky-500/20 font-bold text-[10px] transition-all flex flex-col items-center justify-center cursor-pointer active:scale-95 disabled:opacity-50"
+                >
+                  <span>+1000ml</span>
+                </button>
+              </div>
+
+              {/* Custom ml input */}
+              <div className="flex gap-1.5">
+                <input
+                  type="number"
+                  placeholder="Custom ml..."
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(e.target.value)}
+                  className="flex-1 min-w-0 bg-zinc-950/60 border border-zinc-800 rounded-xl px-2.5 py-1 text-[11px] text-zinc-300 focus:outline-none focus:border-sky-500"
+                />
+                <button 
+                  onClick={() => handleLogWater(customAmount)}
+                  disabled={loggingWater || !customAmount}
+                  className="px-3 bg-sky-500 text-zinc-950 font-bold text-[11px] rounded-xl hover:bg-sky-400 transition-colors disabled:opacity-50 shrink-0"
+                >
+                  Log
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Calories Burned */}
+        <div className="rounded-[2rem] border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col justify-between shadow-xl backdrop-blur-xl">
+          <div>
+            <p className="text-zinc-400 text-sm uppercase tracking-wider font-medium">Calories Burned Today</p>
+            <div className="mt-3 text-4xl font-bold text-white">{Math.round(caloriesBurned)} kcal</div>
+          </div>
+          <p className="mt-4 text-zinc-500 text-sm border-t border-zinc-800/40 pt-3">Workout logs: {data.todayNutrition?.workoutsLogged || 0}</p>
         </div>
       </div>
 

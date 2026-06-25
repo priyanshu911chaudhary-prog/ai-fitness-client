@@ -86,4 +86,58 @@ select:-webkit-autofill:focus {
 /* Interactive touch elements: remove grey tap highlights in iOS Safari */
 input, select, textarea, button, a {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Animated Water Wave Effect */
+.water-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(9, 9, 11, 0.6); /* zinc-950/60 */
+  border: 4px solid rgba(56, 189, 248, 0.4); /* sky-400/40 */
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.15), inset 0 0 20px rgba(56, 189, 248, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.water-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%); /* sky-400 to sky-700 */
+  transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.water-wave::before,
+.water-wave::after {
+  content: "";
+  position: absolute;
+  width: 210%;
+  height: 210%;
+  bottom: 98%;
+  left: -55%;
+  background: #18181b; /* matches dashboard card background zinc-900 */
+  border-radius: 43%;
+  animation: wave-rot 8s linear infinite;
+  pointer-events: none;
+}
+
+.water-wave::after {
+  background: rgba(24, 24, 27, 0.5); /* semi-transparent to create depth */
+  border-radius: 40%;
+  animation: wave-rot 4s linear infinite;
+}
+
+@keyframes wave-rot {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
