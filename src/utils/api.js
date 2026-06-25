@@ -39,7 +39,7 @@ api.interceptors.response.use(
 
       try {
         // Attempt to hit your refresh token endpoint directly so we do not recurse through the interceptor
-        const { data } = await axios.post(`${apiBaseUrl}/auth/refresh-token`, {}, {
+        const { data } = await axios.post(`${baseURL}/auth/refresh-token`, {}, {
           withCredentials: true // Assuming refresh token is in an HttpOnly cookie
         });
 
