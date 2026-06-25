@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [tempGoal, setTempGoal] = useState(2000);
   const [customAmount, setCustomAmount] = useState('');
   const [loggingWater, setLoggingWater] = useState(false);
+  const [weightTimeframe, setWeightTimeframe] = useState('weekly'); // 'weekly' or 'monthly'
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -235,8 +236,11 @@ export default function Dashboard() {
   const trend = data.bmi?.trend || [];
   let graphPoints = [];
   
-  if (trend.length > 0) {
-    graphPoints = trend.map((t) => ({
+  // Slice trend based on timeframe selected
+  const activeTrend = weightTimeframe === 'weekly' ? trend.slice(-7) : trend.slice(-30);
+  
+  if (activeTrend.length > 0) {
+    graphPoints = activeTrend.map((t) => ({
       weight: t.weight,
       date: new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
     }));
@@ -515,11 +519,37 @@ export default function Dashboard() {
               <h2 className="text-xl font-bold text-white">Weight Progress Tracker</h2>
               <p className="text-sm text-zinc-400 mt-1">Real-time analysis of your weight trends based on your fitness goals.</p>
             </div>
-            {renderAnalysis() && (
-              <span className={`inline-flex items-center rounded-full px-3.5 py-1 text-xs font-bold border transition-all duration-300 ${renderAnalysis().statusColorClass}`}>
-                {renderAnalysis().statusText}
-              </span>
-            )}
+            <div className="flex items-center gap-4">
+              {/* Timeframe Switcher */}
+              <div className="inline-flex rounded-xl bg-white/5 p-1 border border-white/5 shrink-0">
+                <button
+                  onClick={() => setWeightTimeframe('weekly')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    weightTimeframe === 'weekly'
+                      ? 'bg-white text-black shadow-lg'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Weekly
+                </button>
+                <button
+                  onClick={() => setWeightTimeframe('monthly')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    weightTimeframe === 'monthly'
+                      ? 'bg-white text-black shadow-lg'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Monthly
+                </button>
+              </div>
+              
+              {renderAnalysis() && (
+                <span className={`inline-flex items-center rounded-full px-3.5 py-1 text-xs font-bold border transition-all duration-300 ${renderAnalysis().statusColorClass}`}>
+                  {renderAnalysis().statusText}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-5 gap-8">
