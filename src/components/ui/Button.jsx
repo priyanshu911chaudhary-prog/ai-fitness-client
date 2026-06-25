@@ -12,7 +12,7 @@ export function Button({
     primary: "bg-emerald-500 text-zinc-950 hover:bg-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)]",
     secondary: "bg-zinc-800 text-zinc-100 hover:bg-zinc-700 shadow-lg hover:shadow-zinc-700/30",
     outline: "border border-zinc-700 text-zinc-100 hover:bg-zinc-800",
-    ghost: "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+    ghost: "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850/50"
   };
 
   const sizes = {

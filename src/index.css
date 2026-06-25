@@ -121,14 +121,14 @@ input, select, textarea, button, a {
   height: 210%;
   bottom: 98%;
   left: -55%;
-  background: #18181b; /* matches dashboard card background zinc-900 */
+  background: #000000; /* matches dashboard card background black */
   border-radius: 43%;
   animation: wave-rot 8s linear infinite;
   pointer-events: none;
 }
 
 .water-wave::after {
-  background: rgba(24, 24, 27, 0.5); /* semi-transparent to create depth */
+  background: rgba(0, 0, 0, 0.5); /* semi-transparent to create depth */
   border-radius: 40%;
   animation: wave-rot 4s linear infinite;
 }

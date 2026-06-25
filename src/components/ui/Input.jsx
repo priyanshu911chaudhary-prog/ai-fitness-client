@@ -23,7 +23,7 @@ export const Input = forwardRef(({
         <input
           ref={ref}
           type={inputType}
-          className={`flex h-11 w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md px-4 py-2 text-base md:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${isPassword ? 'pr-10' : ''} ${className}`}
+          className={`flex h-11 w-full rounded-xl border border-white/10 bg-black/60 backdrop-blur-md px-4 py-2 text-base md:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${isPassword ? 'pr-10' : ''} ${className}`}
           {...props}
         />
         {isPassword && (

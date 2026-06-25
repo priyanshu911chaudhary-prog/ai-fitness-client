@@ -21,7 +21,7 @@ import Landing from './pages/Landing';
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-zinc-950 font-sans selection:bg-emerald-500/30 text-zinc-50">
+    <div className="min-h-screen bg-black font-sans selection:bg-white/20 text-white">
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Landing />} />

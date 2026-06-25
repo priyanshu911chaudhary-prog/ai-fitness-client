@@ -23,10 +23,10 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="flex h-dvh w-64 flex-col border-r border-zinc-800/50 bg-zinc-950/80 p-6 backdrop-blur-2xl">
+    <aside className="flex h-dvh w-64 flex-col border-r border-white/5 bg-black/60 p-6 backdrop-blur-2xl shadow-2xl">
       <div className="mb-10 flex items-center gap-2">
-        <BrainCircuit className="h-7 w-7 text-emerald-400 shrink-0" />
-        <span className="text-2xl font-bold bg-gradient-to-r from-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+        <BrainCircuit className="h-7 w-7 text-white shrink-0" />
+        <span className="text-2xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
           AIFit
         </span>
       </div>
@@ -39,25 +39,29 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 ${
                 isActive 
-                  ? 'bg-emerald-500/10 text-emerald-400 shadow-[inset_4px_0_0_rgba(16,185,129,1)]' 
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 hover:translate-x-1'
+                  ? 'bg-white/10 text-white shadow-[inset_4px_0_0_rgba(255,255,255,1)]' 
+                  : 'text-zinc-400 hover:bg-white/5 hover:text-white hover:translate-x-1'
               }`
             }
           >
-            <item.icon className={`h-5 w-5 shrink-0 ${item.name === 'Meals' ? 'text-teal-400' : ''}`} />
-            {item.name}
+            {({ isActive }) => (
+              <>
+                <item.icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-white' : 'text-zinc-400'}`} />
+                {item.name}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
 
-      <div className="mt-auto space-y-2 border-t border-zinc-800/50 pt-6">
-        <Link to="/profile" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 hover:translate-x-1 transition-all duration-300">
+      <div className="mt-auto space-y-2 border-t border-white/5 pt-6">
+        <Link to="/profile" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-400 hover:bg-white/5 hover:text-white hover:translate-x-1 transition-all duration-300">
           <Settings className="h-5 w-5 shrink-0" />
           Settings
         </Link>
         <button 
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:translate-x-1 transition-all duration-300"
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-400 hover:bg-red-500/10 hover:text-red-400 hover:translate-x-1 transition-all duration-300"
         >
           <LogOut className="h-5 w-5 shrink-0" />
           Log Out
