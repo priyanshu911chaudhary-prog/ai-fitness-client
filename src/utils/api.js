@@ -1,10 +1,14 @@
 import axios from 'axios';
 
 // Determine API base URL.
-// In Netlify production we rely on the `public/_redirects` which proxies `/api/*` to the backend.
-// For direct IP use (optional) set VITE_API_BASE_URL to e.g. "http://13.63.236.146:3000/api/v1" in Netlify env.
+// In dev we use the local proxy path.
+// In Vercel production we use the relative `/api/v1` path with a vercel.json rewrite to the backend.
+// If VITE_API_BASE_URL is set to an insecure http:// URL, we ignore it on HTTPS pages.
 const envBase = import.meta.env.VITE_API_BASE_URL;
-const apiBaseUrl = envBase && envBase !== '' ? envBase : '/api/v1';
+const isSecureBrowser = typeof window !== 'undefined' && window.location.protocol === 'https:';
+const apiBaseUrl = envBase && envBase !== '' && !(isSecureBrowser && envBase.startsWith('http://'))
+  ? envBase
+  : '/api/v1';
 
 // Create a centralized Axios instance
 export const api = axios.create({
