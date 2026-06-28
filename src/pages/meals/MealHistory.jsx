@@ -89,6 +89,9 @@ export default function MealHistory() {
     setEditProtein(log.totalProtein || 0);
     setEditCarbs(log.totalCarbs || 0);
     setEditFat(log.totalFat || 0);
+    setEditFibre(log.totalFibre || 0);
+    setEditServingSize(log.description || '1 serving');
+    setEditNotes(log.notes || '');
   };
 
   const handleSaveEdit = async (e) => {
@@ -98,7 +101,10 @@ export default function MealHistory() {
         totalCalories: Number(editCalories),
         totalProtein: Number(editProtein),
         totalCarbs: Number(editCarbs),
-        totalFat: Number(editFat)
+        totalFat: Number(editFat),
+        totalFibre: Number(editFibre),
+        description: editServingSize,
+        notes: editNotes
       });
       
       // Update local state
@@ -109,7 +115,10 @@ export default function MealHistory() {
             totalCalories: Number(editCalories),
             totalProtein: Number(editProtein),
             totalCarbs: Number(editCarbs),
-            totalFat: Number(editFat)
+            totalFat: Number(editFat),
+            totalFibre: Number(editFibre),
+            description: editServingSize,
+            notes: editNotes
           };
         }
         return log;
@@ -385,12 +394,48 @@ export default function MealHistory() {
 
                 {/* Expanded Food Details */}
                 {isExpanded && (
-                  <div className="px-5 pb-5 pt-3 border-t border-white/5 bg-black/40 animate-[fade-in_0.2s_ease-out]">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 bg-white/[0.01] p-3 rounded-xl border border-white/5 text-xs text-zinc-400">
-                      <div><strong className="text-zinc-300">Fibre:</strong> {log.totalFibre || 0} g</div>
-                      <div><strong className="text-zinc-300">Sugars:</strong> {log.totalSugar || 0} g</div>
-                      <div><strong className="text-zinc-300">Sodium:</strong> {log.totalSodium || 0} mg</div>
+                  <div className="px-5 pb-5 pt-4 border-t border-white/5 bg-black/40 animate-[fade-in_0.2s_ease-out] space-y-4">
+                    
+                    {/* Meal Log Details Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 rounded-xl border border-white/5 bg-white/[0.01] text-xs">
+                      <div>
+                        <span className="text-zinc-500 block uppercase font-bold text-[9px] mb-0.5">Logged Date & Time</span>
+                        <span className="text-zinc-200 font-semibold">
+                          {dateStr} at {new Date(log.consumedAt || log.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500 block uppercase font-bold text-[9px] mb-0.5">Serving Size</span>
+                        <span className="text-zinc-200 font-semibold">
+                          {log.description || '1 serving'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500 block uppercase font-bold text-[9px] mb-0.5">Fiber & Sodium</span>
+                        <span className="text-zinc-200 font-semibold">
+                          {log.totalFibre || 0}g Fiber • {log.totalSodium || 0}mg Sodium
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500 block uppercase font-bold text-[9px] mb-0.5">Sugar</span>
+                        <span className="text-zinc-200 font-semibold">
+                          {log.totalSugar || 0}g Sugar
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500 block uppercase font-bold text-[9px] mb-0.5">Total Calories</span>
+                        <span className="text-zinc-200 font-semibold text-teal-400">
+                          {Math.round(log.totalCalories)} kcal
+                        </span>
+                      </div>
                     </div>
+
+                    {log.notes && (
+                      <div className="text-xs text-zinc-400 bg-white/5 p-3 rounded-xl border border-white/5">
+                        <strong className="text-zinc-300 block mb-0.5">Meal Notes:</strong>
+                        {log.notes}
+                      </div>
+                    )}
 
                     <h5 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Ingredients / Foods Consumed</h5>
                     {log.foods?.length > 0 ? (
@@ -427,37 +472,66 @@ export default function MealHistory() {
           <div className="relative rounded-[2rem] border border-white/10 bg-zinc-950 p-8 shadow-2xl max-w-md w-full animate-[fade-in-up_0.3s_ease-out]">
             <h3 className="text-xl font-bold text-white mb-6">Edit Meal Nutrients</h3>
             <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input 
+                  label="Calories (kcal)"
+                  type="number"
+                  value={editCalories}
+                  onChange={(e) => setEditCalories(e.target.value)}
+                  required
+                />
+                <Input 
+                  label="Protein (g)"
+                  type="number"
+                  value={editProtein}
+                  onChange={(e) => setEditProtein(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <Input 
+                  label="Carbs (g)"
+                  type="number"
+                  value={editCarbs}
+                  onChange={(e) => setEditCarbs(e.target.value)}
+                  required
+                />
+                <Input 
+                  label="Fat (g)"
+                  type="number"
+                  value={editFat}
+                  onChange={(e) => setEditFat(e.target.value)}
+                  required
+                />
+                <Input 
+                  label="Fiber (g)"
+                  type="number"
+                  value={editFibre}
+                  onChange={(e) => setEditFibre(e.target.value)}
+                  required
+                />
+              </div>
+
               <Input 
-                label="Calories (kcal)"
-                type="number"
-                value={editCalories}
-                onChange={(e) => setEditCalories(e.target.value)}
+                label="Serving Size" 
+                value={editServingSize} 
+                onChange={(e) => setEditServingSize(e.target.value)}
                 required
               />
-              <Input 
-                label="Protein (g)"
-                type="number"
-                value={editProtein}
-                onChange={(e) => setEditProtein(e.target.value)}
-                required
-              />
-              <Input 
-                label="Carbs (g)"
-                type="number"
-                value={editCarbs}
-                onChange={(e) => setEditCarbs(e.target.value)}
-                required
-              />
-              <Input 
-                label="Fat (g)"
-                type="number"
-                value={editFat}
-                onChange={(e) => setEditFat(e.target.value)}
-                required
-              />
+
+              <div className="flex flex-col space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-400">Meal Notes</label>
+                <textarea 
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  className="flex min-h-[60px] w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  placeholder="Notes about this meal log..."
+                />
+              </div>
+
               <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="ghost" size="sm" onClick={() => setEditingLog(null)}>Cancel</Button>
-                <Button type="submit" size="sm">Save Changes</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setEditingLog(null)} className="cursor-pointer">Cancel</Button>
+                <Button type="submit" size="sm" className="cursor-pointer">Save Changes</Button>
               </div>
             </form>
           </div>

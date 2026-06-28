@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Sparkles, Utensils, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Sparkles, Utensils, Trash2, Loader2, Play, Copy, Edit, Eye, CheckCircle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { api } from '../../utils/api';
 
@@ -9,6 +9,7 @@ export default function Meals() {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isLoggingId, setIsLoggingId] = useState(null);
 
   const fetchMeals = async () => {
     try {
@@ -28,15 +29,68 @@ export default function Meals() {
     fetchMeals();
   }, []);
 
-  const handleDeleteMeal = async (mealId) => {
+  const handleDeleteMeal = async (e, mealId) => {
+    e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this meal plan?")) return;
     try {
       await api.delete(`/meals/${mealId}`);
-      // Remove from local state
       setMeals(prev => prev.filter(meal => meal._id !== mealId));
     } catch (err) {
       console.error("Failed to delete meal:", err);
       alert("Failed to delete meal. Please try again.");
+    }
+  };
+
+  const handleDuplicateMeal = async (e, meal) => {
+    e.stopPropagation();
+    try {
+      setLoading(true);
+      const detailRes = await api.get(`/meals/${meal._id}`);
+      const detail = detailRes.data.data;
+      const fullMeal = detail.meal || detail;
+      const fullItems = detail.item || fullMeal.items || [];
+
+      const payload = {
+        title: `${fullMeal.title} (Copy)`,
+        description: fullMeal.description || "1 serving",
+        mealType: fullMeal.mealType || "lunch",
+        notes: fullMeal.notes || "",
+        items: fullItems.map(it => ({
+          foodName: it.foodName || it.name,
+          quantity: Number(it.quantity) || 1,
+          unit: it.unit || "g",
+          calories: Number(it.calories) || 0,
+          protein: Number(it.protein) || 0,
+          carbs: Number(it.carbs) || 0,
+          fats: Number(it.fats || it.fat) || 0,
+          fibre: Number(it.fibre) || 0,
+          sugar: Number(it.sugar) || 0,
+          sodium: Number(it.sodium) || 0,
+        }))
+      };
+
+      await api.post('/meals', payload);
+      alert("Meal plan duplicated successfully!");
+      fetchMeals();
+    } catch (err) {
+      console.error("Failed to duplicate meal:", err);
+      alert(err.response?.data?.message || "Failed to duplicate meal.");
+      setLoading(false);
+    }
+  };
+
+  const handleConsumeMeal = async (e, meal) => {
+    e.stopPropagation();
+    try {
+      setIsLoggingId(meal._id);
+      await api.post(`/meals/${meal._id}/consume`, {});
+      alert(`Meal "${meal.title}" logged successfully! Go check Meal History.`);
+      fetchMeals(); // Refresh log status
+    } catch (err) {
+      console.error("Failed to log meal:", err);
+      alert(err.response?.data?.message || "Failed to log meal.");
+    } finally {
+      setIsLoggingId(null);
     }
   };
 
@@ -102,6 +156,9 @@ export default function Meals() {
               ? meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1) 
               : "Full Day";
 
+            const servingSize = meal.description || "1 serving";
+            const isLoggedToday = meal.lastConsumed && new Date(meal.lastConsumed).toDateString() === new Date().toDateString();
+
             return (
               <div
                 key={meal._id}
@@ -113,43 +170,93 @@ export default function Meals() {
                     navigate(`/meals/${meal._id}`);
                   }
                 }}
-                className="group relative rounded-[2rem] border border-white/5 bg-white/[0.02] p-6 shadow-2xl backdrop-blur-2xl transition-all hover:bg-white/[0.04] hover:border-white/10 overflow-hidden cursor-pointer hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                className="group relative flex flex-col justify-between rounded-[2rem] border border-white/5 bg-white/[0.02] p-6 shadow-2xl backdrop-blur-2xl transition-all hover:bg-white/[0.04] hover:border-white/10 overflow-hidden cursor-pointer hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 min-h-[220px]"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-colors pointer-events-none" />
                 
-                <button onClick={(e) => { e.stopPropagation(); handleDeleteMeal(meal._id); }} className="absolute top-6 right-6 z-20">
-                  <Trash2 className="h-4 w-4 text-zinc-500 hover:text-red-400 transition-colors" />
-                </button>
-                
-                <div className="relative z-10 flex justify-between items-start mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-white/5 group-hover:bg-emerald-500/10 group-hover:text-emerald-400 transition-colors border border-white/5">
-                      <Utensils className="h-6 w-6 text-emerald-400" />
+                <div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-white/5 group-hover:bg-emerald-500/10 group-hover:text-emerald-400 transition-colors border border-white/5">
+                        <Utensils className="h-5 w-5 text-emerald-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-zinc-150 text-base group-hover:text-white transition-colors">{meal.title}</h3>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 bg-white/5 px-2 py-0.5 rounded border border-white/5">{displayType}</span>
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/10">{servingSize}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Horizontal Stats Macro Strip */}
+                  <div className="grid grid-cols-4 gap-2 text-center bg-black/40 rounded-xl p-3 border border-white/5 mt-4 text-xs">
+                    <div>
+                      <p className="text-[9px] text-zinc-500 uppercase font-bold mb-0.5">Cals</p>
+                      <p className="font-semibold text-zinc-200">{Math.round(meal.totalCalories || meal.calories || 0)}</p>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-zinc-150">{meal.title}</h3>
-                      <span className="text-xs text-zinc-550">{displayType}</span>
+                      <p className="text-[9px] text-zinc-500 uppercase font-bold mb-0.5">Protein</p>
+                      <p className="font-semibold text-blue-400">{Math.round(meal.protein || 0)}g</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-zinc-500 uppercase font-bold mb-0.5">Carbs</p>
+                      <p className="font-semibold text-amber-400">{Math.round(meal.carbs || 0)}g</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-zinc-500 uppercase font-bold mb-0.5">Fat</p>
+                      <p className="font-semibold text-red-400">{Math.round(meal.fats || meal.fat || 0)}g</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="relative z-10 grid grid-cols-4 gap-2 text-center bg-black/40 rounded-xl p-3 border border-white/5">
-                  <div className="flex flex-col items-center justify-center">
-                    <p className="text-xs text-zinc-500 mb-1">Cals</p>
-                    <p className="font-semibold text-zinc-200">{Math.round(meal.totalCalories || meal.calories || 0)}</p>
+                <div className="mt-4 pt-3 border-t border-white/5 flex flex-wrap gap-2 justify-between items-center z-10">
+                  <div className="flex gap-1">
+                    <button
+                      title="View details"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/meals/${meal._id}`); }}
+                      className="p-1.5 rounded-lg bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors border border-white/5 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      title="Edit recipe"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/meals/edit/${meal._id}`); }}
+                      className="p-1.5 rounded-lg bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors border border-white/5 cursor-pointer"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      title="Duplicate meal recipe"
+                      onClick={(e) => handleDuplicateMeal(e, meal)}
+                      className="p-1.5 rounded-lg bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors border border-white/5 cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      title="Delete meal recipe"
+                      onClick={(e) => handleDeleteMeal(e, meal._id)}
+                      className="p-1.5 rounded-lg bg-white/5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors border border-white/5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <div>
-                    <p className="text-xs text-zinc-500 mb-1">Pro</p>
-                    <p className="font-semibold text-[#ff9800]">{Math.round(meal.protein || 0)}g</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-zinc-500 mb-1">Carb</p>
-                    <p className="font-semibold text-[#00e676]">{Math.round(meal.carbs || 0)}g</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-zinc-500 mb-1">Fat</p>
-                    <p className="font-semibold text-[#b200ff]">{Math.round(meal.fats || 0)}g</p>
-                  </div>
+
+                  {isLoggedToday ? (
+                    <span className="px-3.5 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-bold flex items-center gap-1 select-none">
+                      ✓ Consumed
+                    </span>
+                  ) : (
+                    <button
+                      disabled={isLoggingId === meal._id}
+                      onClick={(e) => handleConsumeMeal(e, meal)}
+                      className="px-3.5 py-1.5 rounded-lg bg-teal-500 text-black text-xs font-bold hover:bg-teal-400 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-lg shadow-teal-500/20"
+                    >
+                      <CheckCircle className="w-3 h-3" />
+                      {isLoggingId === meal._id ? '...' : 'Log'}
+                    </button>
+                  )}
                 </div>
               </div>
             );

@@ -31,6 +31,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Selector states for target prioritization
+  const [allWorkouts, setAllWorkouts] = useState([]);
+  const [allMeals, setAllMeals] = useState([]);
+  const [activeWorkout, setActiveWorkout] = useState(null);
+  const [activeMeal, setActiveMeal] = useState(null);
+  const [showWorkoutSelector, setShowWorkoutSelector] = useState(false);
+  const [showMealSelector, setShowMealSelector] = useState(false);
+
   // Water Tracker state
   const [showWaterHistory, setShowWaterHistory] = useState(false);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -56,6 +64,40 @@ export default function Dashboard() {
         } else {
           setData(dashData);
           setTempGoal(dashData.todayWater?.goal || 2000);
+          
+          // Fetch choices and preferences
+          try {
+            const [wRes, mRes] = await Promise.all([
+              api.get('/workouts/list'),
+              api.get('/meals')
+            ]);
+            setAllWorkouts(wRes.data.data || []);
+            setAllMeals(mRes.data.data || []);
+
+            const savedWorkoutId = localStorage.getItem('active_dashboard_workout_id');
+            const savedMealId = localStorage.getItem('active_dashboard_meal_id');
+
+            if (savedWorkoutId) {
+              try {
+                const res = await api.get(`/workouts/${savedWorkoutId}`);
+                setActiveWorkout(res.data.data.workout || res.data.data);
+              } catch (e) {
+                console.error("Failed to load active workout preference", e);
+                localStorage.removeItem('active_dashboard_workout_id');
+              }
+            }
+            if (savedMealId) {
+              try {
+                const res = await api.get(`/meals/${savedMealId}`);
+                setActiveMeal(res.data.data.meal || res.data.data);
+              } catch (e) {
+                console.error("Failed to load active meal preference", e);
+                localStorage.removeItem('active_dashboard_meal_id');
+              }
+            }
+          } catch (err) {
+            console.error("Failed to load routine preferences", err);
+          }
         }
       } catch (err) {
         console.error("Dashboard error:", err);
@@ -358,169 +400,363 @@ export default function Dashboard() {
       </div>
 
       {/* Today's Focus & Targets */}
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Today's Workout Focus */}
-        <div className="rounded-[2rem] border border-white/5 bg-white/[0.02] p-8 shadow-2xl backdrop-blur-2xl transition-all hover:bg-white/[0.04]">
-          <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-emerald-500/10 p-2.5">
-                <Dumbbell className="h-5 w-5 text-emerald-400" />
-              </div>
-              <div>
-                <h3 className="font-bold text-white">Today's Workout</h3>
-                <p className="text-xs text-zinc-500">{data.todaysWorkout?.day || "No plan active"}</p>
-              </div>
-            </div>
-            {data.todaysWorkout?.isCompleted ? (
-              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
-                Completed ✅
-              </span>
-            ) : data.todaysWorkout?.isRestDay ? (
-              <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
-                Rest Day 🧘
-              </span>
-            ) : (
-              <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
-                Pending 🔥
-              </span>
-            )}
-          </div>
+      {(() => {
+        const todayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()];
 
-          {data.todaysWorkout ? (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-zinc-200">{data.todaysWorkout.focus || "Recovery Focus"}</p>
-                <p className="text-xs text-zinc-500 mt-1">
-                  {data.todaysWorkout.isRestDay 
-                    ? "Time to rest and let muscles recover."
-                    : `${data.todaysWorkout.exercises?.length || 0} planned movements`}
-                </p>
-              </div>
+        // Workout to render
+        let workoutToRender = null;
+        if (activeWorkout) {
+          const todayPlan = activeWorkout.weeklyPlan?.find(day => day.day === todayName);
+          workoutToRender = todayPlan 
+            ? {
+                workoutId: activeWorkout._id,
+                day: todayPlan.day,
+                focus: todayPlan.focus || activeWorkout.title,
+                isRestDay: todayPlan.isRestDay,
+                exercises: todayPlan.exercises || [],
+                isCompleted: data.recentWorkouts?.some(rw => 
+                  rw.workoutName === activeWorkout.title &&
+                  new Date(rw.completedAt || rw.createdAt).toDateString() === new Date().toDateString()
+                )
+              }
+            : {
+                workoutId: activeWorkout._id,
+                day: todayName,
+                focus: activeWorkout.title,
+                isRestDay: false,
+                exercises: activeWorkout.exercises || [],
+                isCompleted: data.recentWorkouts?.some(rw => 
+                  rw.workoutName === activeWorkout.title &&
+                  new Date(rw.completedAt || rw.createdAt).toDateString() === new Date().toDateString()
+                )
+              };
+        } else {
+          workoutToRender = data.todaysWorkout;
+        }
+
+        // Meal plan to render
+        let mealToRender = null;
+        if (activeMeal) {
+          const todayPlan = activeMeal.weeklyPlan?.find(day => day.day === todayName);
+          mealToRender = todayPlan
+            ? {
+                mealPlanId: activeMeal._id,
+                day: todayPlan.day,
+                meals: todayPlan.meals || [],
+                dailyCalorieTarget: activeMeal.dailyCalorieTarget || 2000,
+                dietPreference: activeMeal.dietPreference || "vegetarian",
+              }
+            : {
+                mealPlanId: activeMeal._id,
+                day: todayName,
+                meals: activeMeal.meals || activeMeal.items?.map(it => ({
+                  mealType: activeMeal.mealType || 'lunch',
+                  mealName: it.foodName || it.name || activeMeal.title,
+                  name: it.foodName || it.name || activeMeal.title,
+                  calories: it.calories || 0
+                })) || [],
+                dailyCalorieTarget: activeMeal.totalCalories || activeMeal.calories || 2000,
+                dietPreference: activeMeal.mealType || "lunch",
+              };
+        } else {
+          mealToRender = data.todaysMeal;
+        }
+
+        return (
+          <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Today's Workout Focus */}
+            <div className="relative rounded-[2rem] border border-white/5 bg-white/[0.02] p-8 shadow-2xl backdrop-blur-2xl transition-all hover:bg-white/[0.04]">
               
-              {!data.todaysWorkout.isRestDay && data.todaysWorkout.exercises?.length > 0 && (
-                <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
-                  {data.todaysWorkout.exercises.slice(0, 3).map((ex, i) => (
-                    <div key={i} className="flex justify-between items-center text-xs bg-white/[0.01] border border-white/5 p-2 rounded-xl">
-                      <span className="font-semibold text-zinc-350">{ex.exerciseName || ex.name}</span>
-                      <span className="text-zinc-500">{ex.sets}x{ex.reps} {ex.weight > 0 ? `• ${ex.weight}kg` : ""}</span>
+              {/* Workout Selection Modal Overlay inside Card */}
+              {showWorkoutSelector && (
+                <div className="absolute inset-0 bg-zinc-950/95 z-30 p-6 rounded-[2rem] overflow-y-auto flex flex-col justify-between border border-white/10 animate-[fade-in_0.2s_ease-out]">
+                  <div>
+                    <h4 className="text-sm font-bold text-white mb-3">Prioritize Workout Target</h4>
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem('active_dashboard_workout_id');
+                          setActiveWorkout(null);
+                          setShowWorkoutSelector(false);
+                        }}
+                        className={`w-full text-left text-xs p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          !activeWorkout 
+                            ? 'border-emerald-500 bg-emerald-500/10 text-white font-bold' 
+                            : 'border-white/5 bg-white/[0.02] hover:bg-white/5 text-zinc-400'
+                        }`}
+                      >
+                        Default (Latest Plan)
+                      </button>
+                      {allWorkouts.map(w => (
+                        <button
+                          key={w._id}
+                          onClick={() => {
+                            localStorage.setItem('active_dashboard_workout_id', w._id);
+                            setActiveWorkout(w);
+                            setShowWorkoutSelector(false);
+                          }}
+                          className={`w-full text-left text-xs p-2.5 rounded-xl border transition-all cursor-pointer ${
+                            activeWorkout?._id === w._id 
+                              ? 'border-emerald-500 bg-emerald-500/10 text-white font-bold' 
+                              : 'border-white/5 bg-white/[0.02] hover:bg-white/5 text-zinc-400'
+                          }`}
+                        >
+                          {w.title} ({w.type || 'Strength'})
+                        </button>
+                      ))}
                     </div>
-                  ))}
-                  {data.todaysWorkout.exercises.length > 3 && (
-                    <p className="text-[10px] text-zinc-500 text-center">+ {data.todaysWorkout.exercises.length - 3} more exercises</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowWorkoutSelector(false)}
+                    className="mt-4 w-full bg-white/5 hover:bg-white/10 text-zinc-350 font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-emerald-500/10 p-2.5">
+                    <Dumbbell className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white">Today's Workout</h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[10px] text-zinc-500">{workoutToRender?.day || "No plan active"}</p>
+                      <button 
+                        onClick={() => setShowWorkoutSelector(true)}
+                        className="text-[9px] text-emerald-400 hover:text-emerald-300 font-bold bg-emerald-500/10 border border-emerald-500/10 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                      >
+                        Switch target
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {workoutToRender?.isCompleted ? (
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
+                    Completed ✅
+                  </span>
+                ) : workoutToRender?.isRestDay ? (
+                  <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
+                    Rest Day 🧘
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
+                    Pending 🔥
+                  </span>
+                )}
+              </div>
+
+              {workoutToRender ? (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-200">{workoutToRender.focus || "Recovery Focus"}</p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      {workoutToRender.isRestDay 
+                        ? "Time to rest and let muscles recover."
+                        : `${workoutToRender.exercises?.length || 0} planned movements`}
+                    </p>
+                  </div>
+                  
+                  {!workoutToRender.isRestDay && workoutToRender.exercises?.length > 0 && (
+                    <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
+                      {workoutToRender.exercises.slice(0, 3).map((ex, i) => (
+                        <div key={i} className="flex justify-between items-center text-xs bg-white/[0.01] border border-white/5 p-2 rounded-xl">
+                          <span className="font-semibold text-zinc-350">{ex.exerciseName || ex.name}</span>
+                          <span className="text-zinc-500">{ex.sets}x{ex.reps} {ex.weight > 0 ? `• ${ex.weight}kg` : ""}</span>
+                        </div>
+                      ))}
+                      {workoutToRender.exercises.length > 3 && (
+                        <p className="text-[10px] text-zinc-500 text-center">+ {workoutToRender.exercises.length - 3} more exercises</p>
+                      )}
+                    </div>
+                  )}
+
+                  {!workoutToRender.isRestDay && !workoutToRender.isCompleted && (
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const totalCal = workoutToRender.exercises?.reduce((sum, ex) => sum + (ex.caloriesBurned || 0), 0) || 300;
+                            await api.post(`/workouts/${workoutToRender.workoutId}/log`, {
+                              duration: 45,
+                              caloriesBurned: totalCal,
+                            });
+                            alert("Workout logged successfully!");
+                            window.location.reload();
+                          } catch (err) {
+                            alert(err.response?.data?.message || "Failed to log workout");
+                          }
+                        }}
+                        className="flex-1 text-center bg-emerald-500 text-black py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-400 transition-colors shadow-lg hover:shadow-emerald-500/25 cursor-pointer"
+                      >
+                        Quick Log
+                      </button>
+                      <Link 
+                        to={`/workouts/${workoutToRender.workoutId}`} 
+                        className="flex-1 text-center bg-white/5 border border-white/10 text-zinc-350 py-2.5 rounded-xl font-bold text-xs hover:bg-white/10 transition-colors flex items-center justify-center"
+                      >
+                        View Details
+                      </Link>
+                    </div>
                   )}
                 </div>
+              ) : (
+                <p className="text-xs text-zinc-500 py-4">No active workout split scheduled for today. Start a template from Workouts!</p>
               )}
+            </div>
 
-              {!data.todaysWorkout.isRestDay && !data.todaysWorkout.isCompleted && (
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={async () => {
-                      try {
-                        await api.post(`/workouts/${data.todaysWorkout.workoutId}/log`, {
-                          duration: 45,
-                          caloriesBurned: 300,
-                        });
-                        alert("Workout logged successfully!");
-                        window.location.reload();
-                      } catch (err) {
-                        alert(err.response?.data?.message || "Failed to log workout");
-                      }
-                    }}
-                    className="flex-1 text-center bg-emerald-500 text-black py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-400 transition-colors shadow-lg hover:shadow-emerald-500/25 cursor-pointer"
+            {/* Today's Meal Plan Focus */}
+            <div className="relative rounded-[2rem] border border-white/5 bg-white/[0.02] p-8 shadow-2xl backdrop-blur-2xl transition-all hover:bg-white/[0.04]">
+              
+              {/* Meal Selection Modal Overlay inside Card */}
+              {showMealSelector && (
+                <div className="absolute inset-0 bg-zinc-950/95 z-30 p-6 rounded-[2rem] overflow-y-auto flex flex-col justify-between border border-white/10 animate-[fade-in_0.2s_ease-out]">
+                  <div>
+                    <h4 className="text-sm font-bold text-white mb-3">Prioritize Nutrition Target</h4>
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem('active_dashboard_meal_id');
+                          setActiveMeal(null);
+                          setShowMealSelector(false);
+                        }}
+                        className={`w-full text-left text-xs p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          !activeMeal 
+                            ? 'border-teal-500 bg-teal-500/10 text-white font-bold' 
+                            : 'border-white/5 bg-white/[0.02] hover:bg-white/5 text-zinc-400'
+                        }`}
+                      >
+                        Default (Latest Plan)
+                      </button>
+                      {allMeals.map(m => (
+                        <button
+                          key={m._id}
+                          onClick={() => {
+                            localStorage.setItem('active_dashboard_meal_id', m._id);
+                            setActiveMeal(m);
+                            setShowMealSelector(false);
+                          }}
+                          className={`w-full text-left text-xs p-2.5 rounded-xl border transition-all cursor-pointer ${
+                            activeMeal?._id === m._id 
+                              ? 'border-teal-500 bg-teal-500/10 text-white font-bold' 
+                              : 'border-white/5 bg-white/[0.02] hover:bg-white/5 text-zinc-400'
+                          }`}
+                        >
+                          {m.title} ({m.mealType || 'Diet'})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setShowMealSelector(false)}
+                    className="mt-4 w-full bg-white/5 hover:bg-white/10 text-zinc-355 font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer"
                   >
-                    Quick Log (300 kcal)
+                    Close
                   </button>
-                  <Link 
-                    to={`/workouts/${data.todaysWorkout.workoutId}`} 
-                    className="flex-1 text-center bg-white/5 border border-white/10 text-zinc-300 py-2.5 rounded-xl font-bold text-xs hover:bg-white/10 transition-colors flex items-center justify-center"
-                  >
-                    View Details
-                  </Link>
                 </div>
               )}
-            </div>
-          ) : (
-            <p className="text-xs text-zinc-500 py-4">No active workout split scheduled for today. Start a template from Workouts!</p>
-          )}
-        </div>
 
-        {/* Today's Meal Plan Focus */}
-        <div className="rounded-[2rem] border border-white/5 bg-white/[0.02] p-8 shadow-2xl backdrop-blur-2xl transition-all hover:bg-white/[0.04]">
-          <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-teal-500/10 p-2.5">
-                <Utensils className="h-5 w-5 text-teal-400" />
-              </div>
-              <div>
-                <h3 className="font-bold text-white">Today's Nutrition Plan</h3>
-                <p className="text-xs text-zinc-500">{data.todaysMeal?.day || "No plan active"}</p>
-              </div>
-            </div>
-            {data.todayNutrition?.mealsLogged >= (data.todaysMeal?.meals?.length || 3) ? (
-              <span className="text-[10px] font-bold text-teal-400 bg-teal-500/10 border border-teal-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
-                Full Plan Logged ✅
-              </span>
-            ) : (
-              <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
-                {Math.max(0, (data.todaysMeal?.meals?.length || 0) - (data.todayNutrition?.mealsLogged || 0))} Pending 🍽️
-              </span>
-            )}
-          </div>
-
-          {data.todaysMeal ? (
-            <div className="space-y-4">
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-400">Dietary Style: <strong className="text-zinc-200 capitalize">{data.todaysMeal.dietPreference}</strong></span>
-                <span className="text-zinc-400">Target: <strong className="text-zinc-200">{data.todaysMeal.dailyCalorieTarget} kcal</strong></span>
-              </div>
-
-              <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
-                {(data.todaysMeal.meals || []).map((meal, idx) => {
-                  return (
-                    <div key={idx} className="flex justify-between items-center text-xs bg-white/[0.01] border border-white/5 p-2 rounded-xl">
-                      <div>
-                        <span className="font-bold text-zinc-350 capitalize">{meal.mealType}: </span>
-                        <span className="text-zinc-400">{meal.mealName || meal.name}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-zinc-500 font-medium">{meal.calories} kcal</span>
-                        <button
-                          onClick={async () => {
-                            try {
-                              await api.post(`/meals/${data.todaysMeal.mealPlanId}/consume`, {
-                                day: data.todaysMeal.day,
-                                mealType: meal.mealType
-                              });
-                              alert(`${meal.mealType} logged successfully!`);
-                              window.location.reload();
-                            } catch (err) {
-                              alert(err.response?.data?.message || "Failed to log meal");
-                            }
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-teal-500 hover:bg-teal-400 text-[10px] font-bold text-black transition-colors cursor-pointer"
-                        >
-                          ✓ Log
-                        </button>
-                      </div>
+              <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-teal-500/10 p-2.5">
+                    <Utensils className="h-5 w-5 text-teal-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white">Today's Nutrition Plan</h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[10px] text-zinc-500">{mealToRender?.day || "No plan active"}</p>
+                      <button 
+                        onClick={() => setShowMealSelector(true)}
+                        className="text-[9px] text-teal-400 hover:text-teal-300 font-bold bg-teal-500/10 border border-teal-500/10 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                      >
+                        Switch target
+                      </button>
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
+                {data.todayNutrition?.mealsLogged >= (mealToRender?.meals?.length || 3) ? (
+                  <span className="text-[10px] font-bold text-teal-400 bg-teal-500/10 border border-teal-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
+                    Full Plan Logged ✅
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
+                    {Math.max(0, (mealToRender?.meals?.length || 0) - (data.todayNutrition?.mealsLogged || 0))} Pending 🍽️
+                  </span>
+                )}
               </div>
 
-              <div className="text-center">
-                <Link 
-                  to={`/meals/${data.todaysMeal.mealPlanId}`} 
-                  className="inline-block text-center w-full bg-white/5 border border-white/10 text-zinc-350 py-2.5 rounded-xl font-bold text-xs hover:bg-white/10 transition-colors"
-                >
-                  View Full Meal Recipes
-                </Link>
-              </div>
+              {mealToRender ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-zinc-400">Type / Style: <strong className="text-zinc-200 capitalize">{mealToRender.dietPreference}</strong></span>
+                    <span className="text-zinc-400">Target: <strong className="text-zinc-200">{mealToRender.dailyCalorieTarget} kcal</strong></span>
+                  </div>
+
+                  <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
+                    {(mealToRender.meals || []).map((meal, idx) => {
+                      return (
+                        <div key={idx} className="flex justify-between items-center text-xs bg-white/[0.01] border border-white/5 p-2 rounded-xl">
+                          <div>
+                            <span className="font-bold text-zinc-350 capitalize">{meal.mealType}: </span>
+                            <span className="text-zinc-400">{meal.mealName || meal.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-zinc-500 font-medium">{meal.calories} kcal</span>
+                            {(() => {
+                              const today = new Date().toDateString();
+                              const isAlreadyLogged = data.recentMeals?.some(m => 
+                                m.mealType?.toLowerCase() === meal.mealType?.toLowerCase() &&
+                                new Date(m.consumedAt || m.createdAt).toDateString() === today
+                              );
+                              
+                              return isAlreadyLogged ? (
+                                <span className="text-[10px] font-bold text-teal-400 bg-teal-500/10 border border-teal-500/20 px-2.5 py-1 rounded-lg">
+                                  Logged ✓
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await api.post(`/meals/${mealToRender.mealPlanId}/consume`, {
+                                        day: mealToRender.day,
+                                        mealType: meal.mealType
+                                      });
+                                      alert(`${meal.mealType} logged successfully!`);
+                                      window.location.reload();
+                                    } catch (err) {
+                                      alert(err.response?.data?.message || "Failed to log meal");
+                                    }
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-teal-500 hover:bg-teal-400 text-[10px] font-bold text-black transition-colors cursor-pointer"
+                                >
+                                  ✓ Log
+                                </button>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="text-center">
+                    <Link 
+                      to={`/meals/${mealToRender.mealPlanId}`} 
+                      className="inline-block text-center w-full bg-white/5 border border-white/10 text-zinc-350 py-2.5 rounded-xl font-bold text-xs hover:bg-white/10 transition-colors"
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-zinc-500 py-4">No active nutrition split scheduled for today. Start a meal template from Meals library!</p>
+              )}
             </div>
-          ) : (
-            <p className="text-xs text-zinc-500 py-4">No active nutrition split scheduled for today. Start a meal template from Meals library!</p>
-          )}
-        </div>
-      </div>
+          </div>
+        );
+      })()}
 
       {/* Top Metrics Grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -952,16 +1188,41 @@ export default function Dashboard() {
           <div className="space-y-3">
             {data.recentWorkouts?.length > 0 ? (
               data.recentWorkouts.map((workout, index) => (
-                <div key={index} className="flex items-center justify-between rounded-xl bg-white/[0.01] p-4 border border-white/5 hover:border-white/10 transition-all">
-                  <div>
-                    <p className="font-semibold text-zinc-200">{workout.workoutName}</p>
-                    <p className="text-xs text-zinc-500 mt-0.5">
-                      {workout.workoutType} • {new Date(workout.completedAt || workout.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </p>
+                <div key={index} className="flex flex-col gap-3 rounded-xl bg-white/[0.01] p-5 border border-white/5 hover:border-white/10 hover:bg-white/[0.02] transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-zinc-150 text-base">{workout.workoutName}</p>
+                      <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wider font-medium">
+                        {workout.workoutType} • {new Date(workout.completedAt || workout.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
+                      {workout.completionPercentage || 100}% Done
+                    </span>
                   </div>
-                  <div className="text-right text-xs text-zinc-300">
-                    <span className="font-bold text-white block">{workout.duration} min</span>
-                    <span className="text-rose-500">{workout.caloriesBurned} kcal</span>
+                  
+                  <div className="grid grid-cols-3 gap-2 py-1 text-xs border-t border-b border-white/[0.03] my-1 text-zinc-400">
+                    <div>
+                      <span className="text-[10px] text-zinc-500 block uppercase font-bold">Duration</span>
+                      <span className="font-semibold text-zinc-200">{workout.duration} min</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-500 block uppercase font-bold">Burned</span>
+                      <span className="font-semibold text-rose-500">{workout.caloriesBurned} kcal</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-500 block uppercase font-bold">Movements</span>
+                      <span className="font-semibold text-zinc-200">{workout.exercises?.length || 0} exercises</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Link 
+                      to={`/workouts/history?search=${encodeURIComponent(workout.workoutName)}`} 
+                      className="px-3 py-1 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white rounded-lg text-xs font-bold transition-all border border-white/5"
+                    >
+                      View Details
+                    </Link>
                   </div>
                 </div>
               ))
@@ -985,16 +1246,45 @@ export default function Dashboard() {
           <div className="space-y-3">
             {data.recentMeals?.length > 0 ? (
               data.recentMeals.map((meal, index) => (
-                <div key={index} className="flex items-center justify-between rounded-xl bg-white/[0.01] p-4 border border-white/5 hover:border-white/10 transition-all">
-                  <div>
-                    <p className="font-semibold text-zinc-200">{meal.mealName}</p>
-                    <p className="text-xs text-zinc-500 mt-0.5">
-                      <span className="capitalize">{meal.mealType}</span> • {new Date(meal.consumedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </p>
+                <div key={index} className="flex flex-col gap-3 rounded-xl bg-white/[0.01] p-5 border border-white/5 hover:border-white/10 hover:bg-white/[0.02] transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-zinc-150 text-base">{meal.mealName}</p>
+                      <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wider font-medium">
+                        <span className="capitalize">{meal.mealType}</span> • {new Date(meal.consumedAt || meal.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                      {new Date(meal.consumedAt || meal.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
-                  <div className="text-right text-xs text-zinc-350">
-                    <span className="font-bold text-white block">{Math.round(meal.totalCalories)} kcal</span>
-                    <span className="text-emerald-400">{Math.round(meal.totalProtein || 0)}g P • {Math.round(meal.totalCarbs || 0)}g C</span>
+
+                  <div className="grid grid-cols-4 gap-2 py-1 border-t border-b border-white/[0.03] my-1 text-xs text-zinc-400">
+                    <div>
+                      <span className="text-[10px] text-zinc-500 block uppercase font-bold">Calories</span>
+                      <span className="font-semibold text-white">{Math.round(meal.totalCalories)} kcal</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-500 block uppercase font-bold">Protein</span>
+                      <span className="font-semibold text-blue-400">{Math.round(meal.totalProtein || 0)}g</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-500 block uppercase font-bold">Carbs</span>
+                      <span className="font-semibold text-amber-400">{Math.round(meal.totalCarbs || 0)}g</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-500 block uppercase font-bold">Fat</span>
+                      <span className="font-semibold text-red-400">{Math.round(meal.totalFat || 0)}g</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Link 
+                      to={`/meals/history?search=${encodeURIComponent(meal.mealName)}`} 
+                      className="px-3 py-1 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white rounded-lg text-xs font-bold transition-all border border-white/5"
+                    >
+                      View Details
+                    </Link>
                   </div>
                 </div>
               ))

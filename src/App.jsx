@@ -50,6 +50,7 @@ export default function App() {
             <Route index element={<Workouts />} />
             <Route path="history" element={<WorkoutHistory />} />
             <Route path="create" element={<CreateWorkout />} />
+            <Route path="edit/:id" element={<CreateWorkout />} />
             <Route path="generate" element={<AIWorkoutGenerator />} />
             <Route path=":id" element={<WorkoutDetail />} />
           </Route>
@@ -58,6 +59,7 @@ export default function App() {
             <Route index element={<Meals />} />
             <Route path="history" element={<MealHistory />} />
             <Route path="create" element={<CreateMeal />} />
+            <Route path="edit/:id" element={<CreateMeal />} />
             <Route path="generate" element={<AIMealGenerator />} />
             <Route path=":id" element={<MealDetail />} />
           </Route>

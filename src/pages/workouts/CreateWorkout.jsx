@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Trash2, Copy, ArrowUp, ArrowDown, Plus, ChevronDown } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -7,6 +7,7 @@ import { api } from '../../utils/api';
 
 export default function CreateWorkout() {
   const navigate = useNavigate();
+  const { id } = useParams(); // URL parameter for Edit mode
   const [isLoading, setIsLoading] = useState(false);
 
   // Workout details
@@ -16,12 +17,58 @@ export default function CreateWorkout() {
   const [difficulty, setDifficulty] = useState('intermediate');
   const [duration, setDuration] = useState(60);
   const [notes, setNotes] = useState('');
+  const [muscleGroup, setMuscleGroup] = useState('Full Body');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Exercises list
   const [exercises, setExercises] = useState([
     { exerciseName: '', sets: 3, reps: 10, weight: 0, restTime: 60, caloriesBurned: 50, notes: '' }
   ]);
+
+  // Load existing workout if in edit mode
+  useEffect(() => {
+    if (id) {
+      const fetchWorkoutForEdit = async () => {
+        try {
+          setIsLoading(true);
+          const res = await api.get(`/workouts/${id}`);
+          const data = res.data.data;
+          const workout = data.workout || data;
+          setName(workout.title || '');
+          setGoal(workout.goal || 'Build Muscle');
+          setType(workout.type || 'Strength');
+          setDifficulty(workout.difficulty || 'intermediate');
+          setDuration(workout.duration || 60);
+          setNotes(workout.notes || '');
+          setMuscleGroup(workout.description || 'Full Body');
+          if (workout.date) {
+            setDate(new Date(workout.date).toISOString().split('T')[0]);
+          }
+          const loadedExercises = data.exercises || workout.exercises || [];
+          if (loadedExercises.length > 0) {
+            setExercises(loadedExercises.map(ex => ({
+              exerciseName: ex.exerciseName || ex.name || '',
+              sets: Number(ex.sets) || 3,
+              reps: Number(ex.reps) || 10,
+              weight: Number(ex.weight) || 0,
+              restTime: Number(ex.restTime) || 60,
+              caloriesBurned: Number(ex.caloriesBurned) || 50,
+              notes: ex.notes || ''
+            })));
+          }
+        } catch (err) {
+          console.error("Failed to load workout details:", err);
+          alert("Failed to load workout details for editing.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchWorkoutForEdit();
+    }
+  }, [id]);
+
+  // Calculate total calories dynamically
+  const calculatedCalories = exercises.reduce((sum, ex) => sum + (Number(ex.caloriesBurned) || 0), 0);
 
   // Operations on exercises
   const handleAddExercise = () => {
@@ -94,7 +141,7 @@ export default function CreateWorkout() {
     try {
       const payload = {
         title: name,
-        description: type, // Map type to description for backward compatibility
+        description: muscleGroup, // Map muscleGroup to description to store Target Muscle Group in DB
         duration: Number(duration),
         difficulty,
         goal,
@@ -104,11 +151,19 @@ export default function CreateWorkout() {
         exercises: validExercises
       };
 
-      await api.post('/workouts', payload);
+      if (id) {
+        // Edit mode
+        await api.put(`/workouts/${id}`, payload);
+        alert("Workout updated successfully!");
+      } else {
+        // Create mode
+        await api.post('/workouts', payload);
+        alert("Workout created successfully!");
+      }
       navigate('/workouts');
     } catch (err) {
-      console.error("Failed to create workout:", err);
-      alert(err.response?.data?.message || "Failed to create workout. Please try again.");
+      console.error("Failed to save workout:", err);
+      alert(err.response?.data?.message || "Failed to save workout. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +173,7 @@ export default function CreateWorkout() {
     <div className="max-w-4xl mx-auto space-y-8 animate-[fade-in-up_0.6s_ease-out_forwards]">
       <button 
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-emerald-400 transition-colors"
+        className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-emerald-400 transition-colors cursor-pointer"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Workouts
@@ -126,7 +181,9 @@ export default function CreateWorkout() {
 
       <div className="relative rounded-[2rem] border border-zinc-800/60 bg-zinc-900/40 p-8 shadow-xl backdrop-blur-xl overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-        <h1 className="relative z-10 text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500 mb-8">Design Workout Routine</h1>
+        <h1 className="relative z-10 text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500 mb-8">
+          {id ? 'Modify Workout Split' : 'Design Workout Routine'}
+        </h1>
         
         <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
           
@@ -174,12 +231,18 @@ export default function CreateWorkout() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-zinc-800/50">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-6 border-t border-zinc-800/50">
             <Input 
               label="Goal Description"
               placeholder="e.g., hypertrophy, fat burn"
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
+            />
+            <Input 
+              label="Target Muscle Group"
+              placeholder="e.g., Chest, Back, Legs"
+              value={muscleGroup}
+              onChange={(e) => setMuscleGroup(e.target.value)}
             />
             <Input 
               label="Est. Duration (minutes)"
@@ -188,6 +251,15 @@ export default function CreateWorkout() {
               onChange={(e) => setDuration(e.target.value)}
               required
             />
+            <div className="flex flex-col space-y-1.5">
+              <label className="text-sm font-medium text-zinc-300">Est. Calories Burned</label>
+              <div className="flex h-11 items-center px-4 rounded-xl border border-zinc-800/80 bg-zinc-900/20 text-zinc-400 text-sm">
+                {calculatedCalories} kcal (auto-summed)
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-zinc-800/50">
             <Input 
               label="Workout Date"
               type="date"
@@ -204,7 +276,7 @@ export default function CreateWorkout() {
               <button 
                 type="button"
                 onClick={handleAddExercise}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
                 Add Exercise
@@ -303,7 +375,7 @@ export default function CreateWorkout() {
                         type="button"
                         onClick={() => handleMoveUp(index)}
                         disabled={index === 0}
-                        className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all"
+                        className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
                         title="Move Up"
                       >
                         <ArrowUp className="h-3.5 w-3.5" />
@@ -312,7 +384,7 @@ export default function CreateWorkout() {
                         type="button"
                         onClick={() => handleMoveDown(index)}
                         disabled={index === exercises.length - 1}
-                        className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all"
+                        className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
                         title="Move Down"
                       >
                         <ArrowDown className="h-3.5 w-3.5" />
@@ -320,7 +392,7 @@ export default function CreateWorkout() {
                       <button 
                         type="button"
                         onClick={() => handleDuplicateExercise(index)}
-                        className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all"
+                        className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all cursor-pointer"
                         title="Duplicate Exercise"
                       >
                         <Copy className="h-3.5 w-3.5" />
@@ -329,7 +401,7 @@ export default function CreateWorkout() {
                         type="button"
                         onClick={() => handleRemoveExercise(index)}
                         disabled={exercises.length === 1}
-                        className="p-2 bg-white/5 hover:bg-red-500/10 rounded-lg text-zinc-500 hover:text-red-400 disabled:opacity-30 disabled:pointer-events-none transition-all"
+                        className="p-2 bg-white/5 hover:bg-red-500/10 rounded-lg text-zinc-500 hover:text-red-400 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
                         title="Remove Exercise"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -349,17 +421,17 @@ export default function CreateWorkout() {
               placeholder="e.g., Focus on upper back and shoulders. Maximize mind-muscle connection."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="flex min-h-[80px] w-full rounded-xl border border-zinc-800 bg-zinc-90/50 px-4 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-md"
+              className="flex min-h-[80px] w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-md"
             />
           </div>
 
           {/* Footer controls */}
           <div className="pt-6 flex justify-end gap-3 border-t border-zinc-800/50">
-            <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
+            <Button type="button" variant="ghost" onClick={() => navigate(-1)} className="cursor-pointer">
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Creating routine...' : 'Save Routine'}
+            <Button type="submit" disabled={isLoading} className="cursor-pointer">
+              {isLoading ? 'Saving routine...' : 'Save Routine'}
             </Button>
           </div>
         </form>

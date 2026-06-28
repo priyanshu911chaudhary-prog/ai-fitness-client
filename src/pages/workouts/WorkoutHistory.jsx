@@ -92,6 +92,8 @@ export default function WorkoutHistory() {
     setEditDuration(log.duration);
     setEditCalories(log.caloriesBurned);
     setEditNotes(log.notes || '');
+    setEditStatus(log.status || 'completed');
+    setEditCompletionPercentage(log.completionPercentage || 100);
   };
 
   const handleSaveEdit = async (e) => {
@@ -100,7 +102,9 @@ export default function WorkoutHistory() {
       await api.put(`/workouts/history/${editingLog._id}`, {
         duration: Number(editDuration),
         caloriesBurned: Number(editCalories),
-        notes: editNotes
+        notes: editNotes,
+        status: editStatus,
+        completionPercentage: Number(editCompletionPercentage)
       });
       
       // Update local state
@@ -110,7 +114,9 @@ export default function WorkoutHistory() {
             ...log,
             duration: Number(editDuration),
             caloriesBurned: Number(editCalories),
-            notes: editNotes
+            notes: editNotes,
+            status: editStatus,
+            completionPercentage: Number(editCompletionPercentage)
           };
         }
         return log;
@@ -360,10 +366,39 @@ export default function WorkoutHistory() {
 
                 {/* Expanded Exercises detail */}
                 {isExpanded && (
-                  <div className="px-5 pb-5 pt-3 border-t border-white/5 bg-black/40 animate-[fade-in_0.2s_ease-out]">
+                  <div className="px-5 pb-5 pt-3 border-t border-white/5 bg-black/40 animate-[fade-in_0.2s_ease-out] space-y-4">
+                    
+                    {/* Workout Summary Details Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl border border-white/5 bg-white/[0.01] text-xs">
+                      <div>
+                        <span className="text-zinc-500 block uppercase font-bold text-[9px] mb-0.5">Logged Date & Time</span>
+                        <span className="text-zinc-200 font-semibold">
+                          {dateStr} at {new Date(log.completedAt || log.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500 block uppercase font-bold text-[9px] mb-0.5">Completion Status</span>
+                        <span className={`font-semibold capitalize ${log.status === 'completed' || !log.status ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {log.status || 'completed'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500 block uppercase font-bold text-[9px] mb-0.5">Completion Percentage</span>
+                        <span className="text-zinc-200 font-semibold">
+                          {log.completionPercentage || 100}%
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500 block uppercase font-bold text-[9px] mb-0.5">Est. Calories & Duration</span>
+                        <span className="text-zinc-200 font-semibold">
+                          {Math.round(log.caloriesBurned)} kcal • {log.duration} min
+                        </span>
+                      </div>
+                    </div>
+
                     {log.notes && (
-                      <div className="mb-4 text-xs text-zinc-400 bg-white/5 p-3 rounded-xl border border-white/5">
-                        <strong className="text-zinc-300 block mb-0.5">Notes:</strong>
+                      <div className="text-xs text-zinc-400 bg-white/5 p-3 rounded-xl border border-white/5">
+                        <strong className="text-zinc-300 block mb-0.5">Workout Notes:</strong>
                         {log.notes}
                       </div>
                     )}
@@ -429,6 +464,28 @@ export default function WorkoutHistory() {
                 onChange={(e) => setEditCalories(e.target.value)}
                 required
               />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-400">Completion Status</label>
+                  <select 
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="flex h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-xs text-white focus:outline-none"
+                  >
+                    <option value="completed">Completed</option>
+                    <option value="missed">Missed</option>
+                  </select>
+                </div>
+                <Input 
+                  label="Completion %" 
+                  type="number" 
+                  value={editCompletionPercentage} 
+                  onChange={(e) => setEditCompletionPercentage(e.target.value)}
+                  required
+                />
+              </div>
+
               <div className="flex flex-col space-y-1.5">
                 <label className="text-xs font-semibold text-zinc-400">Session Notes</label>
                 <textarea 
@@ -439,8 +496,8 @@ export default function WorkoutHistory() {
                 />
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="ghost" size="sm" onClick={() => setEditingLog(null)}>Cancel</Button>
-                <Button type="submit" size="sm">Save Changes</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setEditingLog(null)} className="cursor-pointer">Cancel</Button>
+                <Button type="submit" size="sm" className="cursor-pointer">Save Changes</Button>
               </div>
             </form>
           </div>
